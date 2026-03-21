@@ -12,6 +12,8 @@ enum class TokenType {
   IDENTIFIER,  // 식별자 (변수명, 함수명 등)
   THEOREM,     // "theorem" 키워드
   AXIOM,       // "axiom" 키워드
+  QED,         // "qed" 키워드
+  INDENT,      // 처음 4번의 공백
   END_OF_FILE, // EOF
   UNKNOWN      // 알 수 없는 토큰
 };

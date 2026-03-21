@@ -28,6 +28,12 @@ bool Lexer::isAtEnd() const { return pos >= source.length(); }
 void Lexer::skipWhitespace() {
   while (!isAtEnd()) {
     char c = peek();
+    
+    // 처음에 4개의 공백이 나오면 INDENT 토큰 처리를 위해 스킵 중단
+    if (c == ' ' && column == 1 && peek(1) == ' ' && peek(2) == ' ' && peek(3) == ' ') {
+      break;
+    }
+
     if (std::isspace(c)) {
       advance();
     } else if (c == '/' && peek(1) == '/') {
@@ -129,6 +135,8 @@ Token Lexer::scanIdentifierOrKeyword() {
     type = TokenType::THEOREM;
   else if (value == "axiom")
     type = TokenType::AXIOM;
+  else if (value == "qed")
+    type = TokenType::QED;
   else if (value == "forall" || value == "exists")
     type = TokenType::QUANTIFIER;
 
@@ -172,6 +180,14 @@ Token Lexer::nextToken() {
   }
 
   char c = peek();
+
+  // 줄 번호와 컬럼 번호 1인 상태에서 첫 4개의 공백을 만났을 때 INDENT 토큰 반환
+  if (c == ' ' && column == 1 && peek(1) == ' ' && peek(2) == ' ' && peek(3) == ' ') {
+    size_t startLine = line;
+    size_t startCol = column;
+    advance(); advance(); advance(); advance();
+    return {TokenType::INDENT, "    ", startLine, startCol};
+  }
 
   if (c == '"') {
     return scanString();
@@ -225,6 +241,10 @@ std::string tokenTypeToString(TokenType type) {
     return "THEOREM";
   case TokenType::AXIOM:
     return "AXIOM";
+  case TokenType::QED:
+    return "QED";
+  case TokenType::INDENT:
+    return "INDENT";
   case TokenType::END_OF_FILE:
     return "EOF";
   case TokenType::UNKNOWN:
