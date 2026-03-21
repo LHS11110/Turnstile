@@ -1,0 +1,50 @@
+#pragma once
+
+#include <string>
+#include <vector>
+
+enum class TokenType {
+    DELIMITER,    // 구분자 (e.g., (, ), {, }, [, ], ,, ;)
+    STRING,       // 문자열 (e.g., "hello")
+    OPERATOR,     // 논리, 산술 연산자 (e.g., /\, \/, ->, +, -, =)
+    QUANTIFIER,   // 양화사 (e.g., \forall, \exists, forall, exists)
+    LITERAL,      // 리터럴 (정수, 실수 등)
+    IDENTIFIER,   // 식별자 (변수명, 함수명 등)
+    THEOREM,      // "theorem" 키워드
+    AXIOM,        // "axiom" 키워드
+    END_OF_FILE,  // EOF
+    UNKNOWN       // 알 수 없는 토큰
+};
+
+struct Token {
+    TokenType type;
+    std::string value;
+    size_t line;
+    size_t column;
+};
+
+class Lexer {
+public:
+    Lexer(const std::string& source);
+    std::vector<Token> tokenize();
+
+private:
+    std::string source;
+    size_t pos;
+    size_t line;
+    size_t column;
+
+    char peek(size_t offset = 0) const;
+    char advance();
+    bool isAtEnd() const;
+    void skipWhitespace();
+    
+    Token nextToken();
+    Token scanString();
+    Token scanNumber();
+    Token scanIdentifierOrKeyword();
+    Token scanOperatorOrDelimiter();
+
+    bool isDelimiter(char c) const;
+    bool isOperatorChar(char c) const;
+};
