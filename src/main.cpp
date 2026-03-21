@@ -1,41 +1,19 @@
-#include <iostream>
 #include "lexer.hpp"
-
-std::string tokenTypeToString(TokenType type) {
-    switch (type) {
-        case TokenType::DELIMITER: return "DELIMITER";
-        case TokenType::STRING: return "STRING";
-        case TokenType::OPERATOR: return "OPERATOR";
-        case TokenType::QUANTIFIER: return "QUANTIFIER";
-        case TokenType::LITERAL: return "LITERAL";
-        case TokenType::IDENTIFIER: return "IDENTIFIER";
-        case TokenType::THEOREM: return "THEOREM";
-        case TokenType::AXIOM: return "AXIOM";
-        case TokenType::END_OF_FILE: return "EOF";
-        case TokenType::UNKNOWN: return "UNKNOWN";
-        default: return "???";
-    }
-}
-
-void testLexer(const std::string& input) {
-    std::cout << "Input: " << input << "\n";
-    Lexer lexer(input);
-    auto tokens = lexer.tokenize();
-    for (const auto& token : tokens) {
-        std::cout << "[" << tokenTypeToString(token.type) << "] '" 
-                  << token.value << "' (Line: " << token.line 
-                  << ", Col: " << token.column << ")\n";
-    }
-    std::cout << "----------------------------------------\n";
-}
+#include <iostream>
+#include <string>
 
 int main() {
-    std::cout << "Turnstile: System LK Proof Assistant Lexer Test\n\n";
+  std::cout << "Turnstile: System LK Proof Assistant Lexer Test\n\n";
 
-    testLexer("theorem ModusPonens: A /\\ (A -> B) -> B;");
-    testLexer("forall x, \\exists y. P(x) \\/ ~Q(y, 123) = \"hello\"");
-    testLexer("axiom my_axiom");
-    testLexer("3.14 + (2 * x)");
+  std::string source = "theorem P -> P;\naxiom A;\nforall x. P(x)";
+  Lexer lexer(source);
+  std::vector<Token> tokens = lexer.tokenize();
 
-    return 0;
+  std::cout << "Tokens:\n";
+  for (const auto &token : tokens) {
+    std::cout << "  " << tokenTypeToString(token.type) << "\t" << token.value
+              << "\t(" << token.line << ", " << token.column << ")\n";
+  }
+
+  return 0;
 }

@@ -6,13 +6,19 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Define the executable
-add_executable(turnstile
+# Define source files
+set(SOURCES
     src/main.cpp
+    src/lexer.cpp
 )
 
+# Define the executable
+add_executable(turnstile ${SOURCES})
+
 # Target include directories for the executable
-target_include_directories(turnstile PRIVATE include)
+target_include_directories(turnstile PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
 
 # Optional: Enable warnings
 if(MSVC)

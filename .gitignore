@@ -30,6 +30,9 @@
 *.exe
 *.out
 *.app
+turnstile
+test_*
+*.o
 
 # CMake
 build/
@@ -45,9 +48,13 @@ _deps/
 
 # macOS
 .DS_Store
+*.dSYM/
 
-# IDEs
+# IDEs & Tooling
 .vscode/
 .idea/
+.cache/
+.cache/*
+.clangd/
 *.swp
 *.swo
