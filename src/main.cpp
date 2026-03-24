@@ -120,16 +120,84 @@ int main() {
   std::cout << (int)theorems[1]->proofTokens[2].type << "\n";
   std::cout << (int)theorems[1]->proofTokens[3].type << "\n";
 
+  std::cout << "\n=== Test: PropTree toString() ===\n";
+  auto v1 = std::make_shared<Var>(1);
+  auto v2 = std::make_shared<Var>(2);
+  auto v3 = std::make_shared<Var>(3);
+
+  auto not_v1 = std::make_shared<Not>(v1);
+  auto and_node = std::make_shared<And>(v1, v2);
+  auto or_node = std::make_shared<Or>(v1, not_v1);
+  auto imp_node = std::make_shared<Implies>(and_node, or_node);
+  auto eq_node = std::make_shared<Equiv>(imp_node, v3);
+
+  auto in_node = std::make_shared<In>(Var(1), Var(2));
+  auto forall_node = std::make_shared<Forall>(v1, in_node);
+  auto exist_node = std::make_shared<Exist>(v2, eq_node);
+
+  std::cout << "Var:     " << v1->toString() << "\n";
+  std::cout << "Not:     " << not_v1->toString() << "\n";
+  std::cout << "And:     " << and_node->toString() << "\n";
+  std::cout << "Or:      " << or_node->toString() << "\n";
+  std::cout << "Implies: " << imp_node->toString() << "\n";
+  std::cout << "Equiv:   " << eq_node->toString() << "\n";
+  std::cout << "In:      " << in_node->toString() << "\n";
+  std::cout << "Forall:  " << forall_node->toString() << "\n";
+  std::cout << "Exist:   " << exist_node->toString() << "\n";
+
+  std::cout << "Equality Test (And vs And): "
+            << and_node->isEqual(std::make_shared<And>(v1, v2)) << "\n";
+
+  std::cout << "\n=== Test: Complex PropTree isEqual() ===\n";
+  auto in_1_2 = std::make_shared<In>(Var(1), Var(2));
+  auto in_1_3 = std::make_shared<In>(Var(1), Var(3));
+  auto not_in_1_3 = std::make_shared<Not>(in_1_3);
+  auto or_left = std::make_shared<Or>(in_1_2, not_in_1_3);
+  auto forall_left = std::make_shared<Forall>(v1, or_left);
+
+  auto in_4_5 = std::make_shared<In>(Var(4), Var(5));
+  auto in_4_3 = std::make_shared<In>(Var(4), Var(3));
+  auto and_right = std::make_shared<And>(in_1_2, in_4_3);
+  auto imp_right = std::make_shared<Implies>(in_4_5, and_right);
+  auto exist_right =
+      std::make_shared<Exist>(std::make_shared<Var>(4), imp_right);
+
+  auto complex1 = std::make_shared<Equiv>(forall_left, exist_right);
+
+  // Identical deep copy
+  auto c_in_1_2 = std::make_shared<In>(Var(1), Var(2));
+  auto c_in_1_3 = std::make_shared<In>(Var(1), Var(3));
+  auto c_not_in_1_3 = std::make_shared<Not>(c_in_1_3);
+  auto c_or_left = std::make_shared<Or>(c_in_1_2, c_not_in_1_3);
+  auto c_forall_left =
+      std::make_shared<Forall>(std::make_shared<Var>(1), c_or_left);
+
+  auto c_in_4_5 = std::make_shared<In>(Var(4), Var(5));
+  auto c_in_4_3 = std::make_shared<In>(Var(4), Var(3));
+  auto c_and_right = std::make_shared<And>(c_in_1_2, c_in_4_3);
+  auto c_imp_right = std::make_shared<Implies>(c_in_4_5, c_and_right);
+  auto c_exist_right =
+      std::make_shared<Exist>(std::make_shared<Var>(4), c_imp_right);
+
+  auto complex2 = std::make_shared<Equiv>(c_forall_left, c_exist_right);
+
+  // Slightly different (different implication consequent)
+  auto diff_imp_right = std::make_shared<Implies>(c_in_4_5, c_or_left);
+  auto diff_exist_right =
+      std::make_shared<Exist>(std::make_shared<Var>(4), diff_imp_right);
+  auto complex3 = std::make_shared<Equiv>(c_forall_left, diff_exist_right);
+
+  std::cout << "Complex Prop 1: " << complex1->toString() << "\n";
+  std::cout << "Complex Prop 2: " << complex2->toString() << "\n";
+  std::cout << "Complex Prop 3: " << complex3->toString() << "\n";
+  std::cout << "complex1.isEqual(complex2) -> " << complex1->isEqual(complex2)
+            << " (Expected: 1)\n";
+  std::cout << "complex1.isEqual(complex3) -> " << complex1->isEqual(complex3)
+            << " (Expected: 0)\n";
+
   auto end_time = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double, std::milli> total_time = end_time - start_time;
   std::cout << "전체 파싱 소요 시간: " << total_time.count() << " ms\n";
-
-  std::shared_ptr<PropTree> a =
-      std::make_shared<Not>(std::make_shared<PropVar>(1));
-  std::shared_ptr<PropTree> b =
-      std::make_shared<Not>(std::make_shared<PropVar>(1));
-
-  std::cout << a->isEqual(*b) << "\n";
 
   return 0;
 }

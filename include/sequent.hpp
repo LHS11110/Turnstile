@@ -2,6 +2,11 @@
 
 #include "lexer.hpp"
 #include <memory>
+#include <string>
+
+class PropTree;
+
+using Prop = std::shared_ptr<PropTree>;
 
 class PropTree {
 private:
@@ -10,16 +15,19 @@ private:
 public:
   PropTree(TokenType);
   TokenType getNodeType() const;
-  virtual bool isEqual(PropTree &) const = 0;
+  virtual bool isEqual(std::shared_ptr<PropTree>) const = 0;
+  virtual std::string toString() const = 0;
 };
 
-class PropVar : public PropTree {
-public:
+class Var : public PropTree {
+private:
   int var;
 
 public:
-  PropVar(int var);
-  bool isEqual(PropTree &) const override;
+  Var(int var);
+  bool isEqual(std::shared_ptr<PropTree>) const override;
+  std::string toString() const override;
+  int getVar() const;
 };
 
 class Not : public PropTree {
@@ -28,7 +36,85 @@ private:
 
 public:
   Not(std::shared_ptr<PropTree> prop);
-  bool isEqual(PropTree &) const override;
+  bool isEqual(std::shared_ptr<PropTree>) const override;
+  std::string toString() const override;
+};
+
+class And : public PropTree {
+private:
+  std::shared_ptr<PropTree> left;
+  std::shared_ptr<PropTree> right;
+
+public:
+  And(std::shared_ptr<PropTree> left, std::shared_ptr<PropTree> right);
+  bool isEqual(std::shared_ptr<PropTree>) const override;
+  std::string toString() const override;
+};
+
+class Or : public PropTree {
+private:
+  std::shared_ptr<PropTree> left;
+  std::shared_ptr<PropTree> right;
+
+public:
+  Or(std::shared_ptr<PropTree> left, std::shared_ptr<PropTree> right);
+  bool isEqual(std::shared_ptr<PropTree>) const override;
+  std::string toString() const override;
+};
+
+class Implies : public PropTree {
+private:
+  std::shared_ptr<PropTree> left;
+  std::shared_ptr<PropTree> right;
+
+public:
+  Implies(std::shared_ptr<PropTree> left, std::shared_ptr<PropTree> right);
+  bool isEqual(std::shared_ptr<PropTree>) const override;
+  std::string toString() const override;
+};
+
+class Equiv : public PropTree {
+private:
+  std::shared_ptr<PropTree> left;
+  std::shared_ptr<PropTree> right;
+
+public:
+  Equiv(std::shared_ptr<PropTree> left, std::shared_ptr<PropTree> right);
+  bool isEqual(std::shared_ptr<PropTree>) const override;
+  std::string toString() const override;
+};
+
+class In : public PropTree {
+private:
+  Var left;
+  Var right;
+
+public:
+  In(Var left, Var right);
+  bool isEqual(std::shared_ptr<PropTree>) const override;
+  std::string toString() const override;
+};
+
+class Forall : public PropTree {
+private:
+  std::shared_ptr<PropTree> var;
+  std::shared_ptr<PropTree> prop;
+
+public:
+  Forall(std::shared_ptr<PropTree> var, std::shared_ptr<PropTree> prop);
+  bool isEqual(std::shared_ptr<PropTree>) const override;
+  std::string toString() const override;
+};
+
+class Exist : public PropTree {
+private:
+  std::shared_ptr<PropTree> var;
+  std::shared_ptr<PropTree> prop;
+
+public:
+  Exist(std::shared_ptr<PropTree> var, std::shared_ptr<PropTree> prop);
+  bool isEqual(std::shared_ptr<PropTree>) const override;
+  std::string toString() const override;
 };
 
 class Sequent {
