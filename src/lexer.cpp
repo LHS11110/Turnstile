@@ -28,9 +28,10 @@ bool Lexer::isAtEnd() const { return pos >= source.length(); }
 void Lexer::skipWhitespace() {
   while (!isAtEnd()) {
     char c = peek();
-    
+
     // 처음에 4개의 공백이 나오면 INDENT 토큰 처리를 위해 스킵 중단
-    if (c == ' ' && column == 1 && peek(1) == ' ' && peek(2) == ' ' && peek(3) == ' ') {
+    if (c == ' ' && column == 1 && peek(1) == ' ' && peek(2) == ' ' &&
+        peek(3) == ' ') {
       break;
     }
 
@@ -137,8 +138,14 @@ Token Lexer::scanIdentifierOrKeyword() {
     type = TokenType::AXIOM;
   else if (value == "qed")
     type = TokenType::QED;
-  else if (value == "forall" || value == "exists")
-    type = TokenType::QUANTIFIER;
+  else if (value == "sorry")
+    type = TokenType::SORRY;
+  else if (value == "forall")
+    type = TokenType::FORALL;
+  else if (value == "exists")
+    type = TokenType::EXIST;
+  else if (value == "in")
+    type = TokenType::IN;
 
   return {type, value, startLine, startCol};
 }
@@ -158,10 +165,10 @@ Token Lexer::scanOperatorOrDelimiter() {
     while (!isAtEnd() && std::isalpha(peek())) {
       value += advance();
     }
-    if (value == "\\forall" || value == "\\exists") {
-      return {TokenType::QUANTIFIER, value, startLine, startCol};
-    }
-    // 그 외의 경우 일반 OPERATOR로 간주
+    if (value == "\\forall") return {TokenType::FORALL, value, startLine, startCol};
+    if (value == "\\exists") return {TokenType::EXIST, value, startLine, startCol};
+    if (value == "\\in") return {TokenType::IN, value, startLine, startCol};
+    // 그 외의 경우 일반 텍스트로 간주
   }
 
   // 다른 연산자 기호들을 묶음 (예: ->, <=, /\, \/)
@@ -169,7 +176,15 @@ Token Lexer::scanOperatorOrDelimiter() {
     value += advance();
   }
 
-  return {TokenType::OPERATOR, value, startLine, startCol};
+  if (value == "\\/") return {TokenType::OR, value, startLine, startCol};
+  if (value == "/\\") return {TokenType::AND, value, startLine, startCol};
+  if (value == "->") return {TokenType::RIGHTARROW, value, startLine, startCol};
+  if (value == "~") return {TokenType::NOT, value, startLine, startCol};
+  if (value == "=") return {TokenType::EQUAL, value, startLine, startCol};
+  if (value == ":=") return {TokenType::COLON_EQ, value, startLine, startCol};
+  if (value == "<=>") return {TokenType::EQUIV, value, startLine, startCol};
+
+  return {TokenType::UNKNOWN, value, startLine, startCol};
 }
 
 Token Lexer::nextToken() {
@@ -182,10 +197,14 @@ Token Lexer::nextToken() {
   char c = peek();
 
   // 줄 번호와 컬럼 번호 1인 상태에서 첫 4개의 공백을 만났을 때 INDENT 토큰 반환
-  if (c == ' ' && column == 1 && peek(1) == ' ' && peek(2) == ' ' && peek(3) == ' ') {
+  if (c == ' ' && column == 1 && peek(1) == ' ' && peek(2) == ' ' &&
+      peek(3) == ' ') {
     size_t startLine = line;
     size_t startCol = column;
-    advance(); advance(); advance(); advance();
+    advance();
+    advance();
+    advance();
+    advance();
     return {TokenType::INDENT, "    ", startLine, startCol};
   }
 
@@ -229,10 +248,26 @@ std::string tokenTypeToString(TokenType type) {
     return "DELIMITER";
   case TokenType::STRING:
     return "STRING";
-  case TokenType::OPERATOR:
-    return "OPERATOR";
-  case TokenType::QUANTIFIER:
-    return "QUANTIFIER";
+  case TokenType::EQUAL:
+    return "EQUAL";
+  case TokenType::IN:
+    return "IN";
+  case TokenType::COLON_EQ:
+    return "COLON_EQ";
+  case TokenType::EQUIV:
+    return "EQUIV";
+  case TokenType::OR:
+    return "OR";
+  case TokenType::AND:
+    return "AND";
+  case TokenType::RIGHTARROW:
+    return "RIGHTARROW";
+  case TokenType::NOT:
+    return "NOT";
+  case TokenType::FORALL:
+    return "FORALL";
+  case TokenType::EXIST:
+    return "EXIST";
   case TokenType::LITERAL:
     return "LITERAL";
   case TokenType::IDENTIFIER:
@@ -243,6 +278,8 @@ std::string tokenTypeToString(TokenType type) {
     return "AXIOM";
   case TokenType::QED:
     return "QED";
+  case TokenType::SORRY:
+    return "SORRY";
   case TokenType::INDENT:
     return "INDENT";
   case TokenType::END_OF_FILE:

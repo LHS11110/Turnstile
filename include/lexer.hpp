@@ -4,15 +4,24 @@
 #include <vector>
 
 enum class TokenType {
-  DELIMITER,   // 구분자 (e.g., (, ), {, }, [, ], ,, ;)
+  DELIMITER,   // 구분자 (e.g., '(', ')', '{', '}', '[', ']', ',', ';')
   STRING,      // 문자열 (e.g., "hello")
-  OPERATOR,    // 논리, 산술 연산자 (e.g., /\, \/, ->, +, -, =)
-  QUANTIFIER,  // 양화사 (e.g., \forall, \exists, forall, exists)
+  EQUAL,       // '='
+  IN,          // '\in', 'in'
+  COLON_EQ,    // ':='
+  EQUIV,       // '<=>'
+  OR,          // '\/'
+  AND,         // '/\'
+  RIGHTARROW,  // '->'
+  NOT,         // '~'
+  FORALL,      // '\forall', 'forall'
+  EXIST,       // '\exists', 'exists'
   LITERAL,     // 리터럴 (정수, 실수 등)
   IDENTIFIER,  // 식별자 (변수명, 함수명 등)
   THEOREM,     // "theorem" 키워드
   AXIOM,       // "axiom" 키워드
   QED,         // "qed" 키워드
+  SORRY,       // "sorry" 키워드
   INDENT,      // 처음 4번의 공백
   END_OF_FILE, // EOF
   UNKNOWN      // 알 수 없는 토큰
