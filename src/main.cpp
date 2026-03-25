@@ -30,13 +30,14 @@ int main() {
   auto start_time = std::chrono::high_resolution_clock::now();
 
   // 1. 성공 테스트: 드모르간 법칙
-  std::string valid1 = "theorem De_Morgans_laws := ~(P \\/ Q) <=> ~P /\\ ~Q\n"
-                       "    prove...\n"
-                       "qed";
+  std::string valid1 =
+      "theorem De_Morgans_laws := |- ~(P \\/ Q) <=> ~P /\\ ~Q\n"
+      "    prove...\n"
+      "qed";
   runTest("Valid De Morgan's Laws", valid1);
 
   // 2. 성공 테스트: 간단한 함의
-  std::string valid2 = "theorem Identity := P -> P\n"
+  std::string valid2 = "theorem Identity := |- P -> P\n"
                        "    intros P\n"
                        "    exact P\n"
                        "    \"asd\"\n"
@@ -44,13 +45,13 @@ int main() {
   runTest("Valid Identity Implication", valid2);
 
   // 3. 실패 테스트: ':=' 기호 누락 (또는 오타 '=')
-  std::string invalid1 = "theorem Typo_Equals = P -> P\n"
+  std::string invalid1 = "theorem Typo_Equals = |- P -> P\n"
                          "    prove\n"
                          "qed";
   runTest("Invalid Missing ':='", invalid1);
 
   // 4. 실패 테스트: 종료 키워드 'qed' 누락
-  std::string invalid2 = "theorem Unfinished := P \\/ ~P\n"
+  std::string invalid2 = "theorem Unfinished := |- P \\/ ~P\n"
                          "    prove";
   runTest("Invalid Missing 'qed'", invalid2);
 
@@ -72,7 +73,7 @@ int main() {
                          "qed";
   runTest("Invalid Missing Indent", invalid5);
 
-  std::string valid6 = "theorem Identity := P -> P \\/ a\n"
+  std::string valid6 = "theorem Identity := |- P -> P \\/ a\n"
                        "    intros P\n"
                        "    sorry\n"
                        "    exact P\n"
@@ -80,7 +81,7 @@ int main() {
   runTest("Valid Identity Implication", valid6);
 
   // 8. 실패 테스트: qed가 들여쓰기 됨
-  std::string invalid6 = "theorem Identity := P -> P \\/ a\n"
+  std::string invalid6 = "theorem Identity := |- P -> P \\/ a\n"
                          "    intros P\n"
                          "    sorry\n"
                          "    exact P\n"
@@ -88,28 +89,31 @@ int main() {
   runTest("Invalid Indented QED", invalid6);
 
   // 9. 실패 테스트: qed 이후 같은 줄에 다른 토큰 존재
-  std::string invalid7 = "theorem Extra_Tok := P -> P\n"
+  std::string invalid7 = "theorem Extra_Tok := |- P -> P\n"
                          "    intros P\n"
                          "    exact P\n"
                          "qed a";
   runTest("Invalid QED with Extra Tokens", invalid7);
 
-  std::string valid8 = "theorem Identity := d /\\ c \\/ P -> P \\/ a /\\ b\n"
-                       "    intros P\n"
-                       "    sorry\n"
-                       "    exact P\n"
-                       "qed";
+  std::string valid8 =
+      "theorem Identity := A, B |- d /\\ c \\/ P -> P \\/ a /\\ b\n"
+      "    intros P\n"
+      "    sorry\n"
+      "    exact P\n"
+      "qed";
   runTest("Valid Identity Implication", valid8);
 
   // 10. 성공 테스트: 문자열로 된 정리 이름
-  std::string valid9 = "theorem \"My Theorem: P implies P\" := P -> P\n"
-                       "    intros P\n"
-                       "    exact P\n"
-                       "qed\n"
-                       "theorem \"test theorem\" := P -> P\n"
-                       "    P = Q\n"
-                       "    exact P\n"
-                       "qed\n";
+  std::string valid9 =
+      "theorem \"My Theorem: P implies P\" := A, B |- d /\\ c \\/ P "
+      "-> (P \\/ a) /\\ b\n"
+      "    intros P\n"
+      "    exact P\n"
+      "qed\n"
+      "theorem \"test theorem\" := |- P -> P\n"
+      "    P = Q\n"
+      "    exact P\n"
+      "qed\n";
   runTest("Valid String Theorem Name", valid9);
 
   Lexer lexer = Lexer(valid9);
@@ -119,6 +123,8 @@ int main() {
   std::cout << (int)theorems[1]->proofTokens[1].type << "\n";
   std::cout << (int)theorems[1]->proofTokens[2].type << "\n";
   std::cout << (int)theorems[1]->proofTokens[3].type << "\n";
+
+  std::cout << theorems[0]->proposition->toString() << "\n";
 
   std::cout << "\n=== Test: PropTree toString() ===\n";
   auto v1 = std::make_shared<Var>(1);

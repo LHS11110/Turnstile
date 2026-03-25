@@ -65,7 +65,7 @@ std::shared_ptr<TheoremNode> Parser::parseTheorem() {
     throw ParserError("Expected ':=' after theorem name", peek());
   }
 
-  theorem->proposition = parseProposition();
+  theorem->proposition = parseSequent();
 
   size_t currentLine = previous().line;
   bool hasStartedProof = false;
@@ -115,62 +115,85 @@ std::shared_ptr<TheoremNode> Parser::parseTheorem() {
   return theorem;
 }
 
-std::shared_ptr<Expr> Parser::parseProposition() {
+std::shared_ptr<Sequent> Parser::parseSequent() {
+  std::vector<Prop> antecedents;
+  std::vector<Prop> succedents;
+
+  if (!check(TokenType::TURNSTILE)) {
+    antecedents.push_back(parseProposition());
+    while (match(TokenType::COMMA)) {
+      antecedents.push_back(parseProposition());
+    }
+  }
+
+  consume(TokenType::TURNSTILE, "Expected '|-' in Sequent");
+
+  while (!check(TokenType::INDENT) && !check(TokenType::QED) && !isAtEnd()) {
+    succedents.push_back(parseProposition());
+    if (!match(TokenType::COMMA)) {
+      break;
+    }
+  }
+
+  return std::make_shared<Sequent>(antecedents, succedents);
+}
+
+std::shared_ptr<PropTree> Parser::parseProposition() {
   return parseEquivalence(); // lowest priority
 }
 
-std::shared_ptr<Expr> Parser::parseEquivalence() {
+std::shared_ptr<PropTree> Parser::parseEquivalence() {
   auto expr = parseImplication();
   while (match(TokenType::EQUIV)) {
     Token op = previous();
     auto right = parseImplication();
-    expr = std::make_shared<BinaryExpr>(op, op.value, expr, right);
+    expr = std::make_shared<Equiv>(expr, right);
   }
   return expr;
 }
 
-std::shared_ptr<Expr> Parser::parseImplication() {
+std::shared_ptr<PropTree> Parser::parseImplication() {
   auto expr = parseOr();
   while (match(TokenType::RIGHTARROW)) {
     Token op = previous();
     auto right = parseOr();
-    expr = std::make_shared<BinaryExpr>(op, op.value, expr, right);
+    expr = std::make_shared<Implies>(expr, right);
   }
   return expr;
 }
 
-std::shared_ptr<Expr> Parser::parseOr() {
+std::shared_ptr<PropTree> Parser::parseOr() {
   auto expr = parseAnd();
   while (match(TokenType::OR)) {
     Token op = previous();
     auto right = parseAnd();
-    expr = std::make_shared<BinaryExpr>(op, op.value, expr, right);
+    expr = std::make_shared<Or>(expr, right);
   }
   return expr;
 }
 
-std::shared_ptr<Expr> Parser::parseAnd() {
+std::shared_ptr<PropTree> Parser::parseAnd() {
   auto expr = parseUnary();
   while (match(TokenType::AND)) {
     Token op = previous();
     auto right = parseUnary();
-    expr = std::make_shared<BinaryExpr>(op, op.value, expr, right);
+    expr = std::make_shared<And>(expr, right);
   }
   return expr;
 }
 
-std::shared_ptr<Expr> Parser::parseUnary() {
+std::shared_ptr<PropTree> Parser::parseUnary() {
   if (match(TokenType::NOT)) {
     Token op = previous();
     auto right = parseUnary(); // Right-associative or recursive desc
-    return std::make_shared<UnaryExpr>(op, op.value, right);
+    return std::make_shared<Not>(right);
   }
   return parsePrimary();
 }
 
-std::shared_ptr<Expr> Parser::parsePrimary() {
+std::shared_ptr<PropTree> Parser::parsePrimary() {
   if (match(TokenType::IDENTIFIER)) {
-    return std::make_shared<VarExpr>(previous(), previous().value);
+    return std::make_shared<Var>(static_cast<int>(previous().value[0]));
   }
   if (match(TokenType::DELIMITER) && previous().value == "(") {
     auto expr = parseProposition();

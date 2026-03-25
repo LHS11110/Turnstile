@@ -157,6 +157,7 @@ Token Lexer::scanOperatorOrDelimiter() {
   std::string value(1, c);
 
   if (isDelimiter(c)) {
+    if (c == ',') return {TokenType::COMMA, value, startLine, startCol};
     return {TokenType::DELIMITER, value, startLine, startCol};
   }
 
@@ -183,6 +184,7 @@ Token Lexer::scanOperatorOrDelimiter() {
   if (value == "=") return {TokenType::EQUAL, value, startLine, startCol};
   if (value == ":=") return {TokenType::COLON_EQ, value, startLine, startCol};
   if (value == "<=>") return {TokenType::EQUIV, value, startLine, startCol};
+  if (value == "|-") return {TokenType::TURNSTILE, value, startLine, startCol};
 
   return {TokenType::UNKNOWN, value, startLine, startCol};
 }

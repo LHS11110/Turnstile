@@ -29,11 +29,12 @@ private:
   Token consume(TokenType type, const std::string &message);
 
   std::shared_ptr<TheoremNode> parseTheorem();
-  std::shared_ptr<Expr> parseProposition();
-  std::shared_ptr<Expr> parseEquivalence();
-  std::shared_ptr<Expr> parseImplication();
-  std::shared_ptr<Expr> parseOr();
-  std::shared_ptr<Expr> parseAnd();
-  std::shared_ptr<Expr> parseUnary();
-  std::shared_ptr<Expr> parsePrimary();
+  std::shared_ptr<Sequent> parseSequent();
+  std::shared_ptr<PropTree> parseProposition();
+  std::shared_ptr<PropTree> parseEquivalence();
+  std::shared_ptr<PropTree> parseImplication();
+  std::shared_ptr<PropTree> parseOr();
+  std::shared_ptr<PropTree> parseAnd();
+  std::shared_ptr<PropTree> parseUnary();
+  std::shared_ptr<PropTree> parsePrimary();
 };

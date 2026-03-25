@@ -24,7 +24,9 @@ enum class TokenType {
   SORRY,       // "sorry" 키워드
   INDENT,      // 처음 4번의 공백
   END_OF_FILE, // EOF
-  UNKNOWN      // 알 수 없는 토큰
+  UNKNOWN,     // 알 수 없는 토큰
+  TURNSTILE,   // |-
+  COMMA        // ,
 };
 
 struct Token {

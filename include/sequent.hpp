@@ -117,13 +117,24 @@ public:
   std::string toString() const override;
 };
 
-class Sequent {
+class Equal : public PropTree {
 private:
-  std::vector<int> antecedents;
-  std::vector<int> succedents;
+  Var left;
+  Var right;
 
 public:
-  Sequent(std::vector<int> antecedents, std::vector<int> succedents);
+  Equal(Var left, Var right);
+  bool isEqual(std::shared_ptr<PropTree>) const override;
+  std::string toString() const override;
+};
+
+class Sequent {
+private:
+  std::vector<Prop> antecedents;
+  std::vector<Prop> succedents;
+
+public:
+  Sequent(std::vector<Prop> antecedents, std::vector<Prop> succedents);
   std::string toString() const;
 
   friend class AndL_1;
@@ -131,15 +142,11 @@ public:
 
 class Rule {
 public:
-  virtual Sequent apply(std::vector<Sequent> sequents) = 0;
+  virtual Sequent apply(std::vector<Sequent> sequents) const = 0;
 };
 
 class AndL_1 : public Rule {
-private:
-  int num1;
-  int num2;
-
 public:
-  AndL_1(int num1, int num2);
-  Sequent apply(std::vector<Sequent> sequents) override;
+  AndL_1();
+  Sequent apply(std::vector<Sequent> sequents) const override;
 };
