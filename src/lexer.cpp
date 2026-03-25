@@ -288,6 +288,10 @@ std::string tokenTypeToString(TokenType type) {
     return "EOF";
   case TokenType::UNKNOWN:
     return "UNKNOWN";
+  case TokenType::TURNSTILE:
+    return "TURNSTILE";
+  case TokenType::COMMA:
+    return "COMMA";
   default:
     return "???";
   }

@@ -62,13 +62,13 @@ int main() {
   runTest("Invalid Missing Proposition", invalid3);
 
   // 6. 실패 테스트: 괄호 짝 불일치
-  std::string invalid4 = "theorem Bad_Parens := (P \\/ Q\n"
+  std::string invalid4 = "theorem Bad_Parens := |- (P \\/ Q\n"
                          "    prove\n"
                          "qed";
   runTest("Invalid Unmatched Parentheses", invalid4);
 
   // 7. 실패 테스트: 증명 라인에 들여쓰기 누락
-  std::string invalid5 = "theorem No_Indent := P -> P\n"
+  std::string invalid5 = "theorem No_Indent := |- P -> P\n"
                          "prove\n"
                          "qed";
   runTest("Invalid Missing Indent", invalid5);
@@ -115,6 +115,33 @@ int main() {
       "    exact P\n"
       "qed\n";
   runTest("Valid String Theorem Name", valid9);
+
+  // 11. 성공 테스트: First-Order Logic 양화사 및 관계연산자
+  std::string valid10 =
+      "theorem FOL_Test := |- forall x, exists y, x = y \\/ x in A\n"
+      "    prove\n"
+      "qed\n";
+  runTest("Valid First-Order Logic (Quantifiers & Relations)", valid10);
+
+  // 12. 성공 테스트: 우측 결합성 (Right-Associativity)
+  std::string valid11 =
+      "theorem Right_Assoc := |- P -> Q -> R <=> (P -> (Q -> R))\n"
+      "    prove\n"
+      "qed\n";
+  runTest("Valid Right-Associative Implication", valid11);
+
+  // 13. 성공 테스트: 다중 문자열 변수 이름 식별
+  std::string valid12 =
+      "theorem Multi_Char_Vars := Alpha, Beta |- Apple \\/ Alpha -> Beta\n"
+      "    prove\n"
+      "qed\n";
+  runTest("Valid Multi-Character Variables (Symbol Table)", valid12);
+
+  std::string valid13 =
+      "theorem Multi_Char_Vars := Alpha, Beta, Apple \\/ Alpha -> Beta\n"
+      "    prove\n"
+      "qed\n";
+  runTest("Invalid Missing Turnstile", valid13);
 
   Lexer lexer = Lexer(valid9);
   Parser parser = Parser(lexer.tokenize());
@@ -204,6 +231,14 @@ int main() {
   auto end_time = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double, std::milli> total_time = end_time - start_time;
   std::cout << "전체 파싱 소요 시간: " << total_time.count() << " ms\n";
+
+  AndL_1 andL_1 = AndL_1(in_1_2);
+  Sequent seq({and_right, in_1_2}, {in_1_2});
+  std::cout << "\n=== Test: Sequent and AndL_1 Rule ===\n";
+  std::cout << "Original Sequent: " << seq.toString() << '\n';
+  Sequent results = andL_1.apply(seq);
+  std::cout << "After applying AndL_1 (index 0): " << results.toString()
+            << '\n';
 
   return 0;
 }

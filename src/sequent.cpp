@@ -24,70 +24,68 @@ TokenType PropTree::getNodeType() const { return nodeType; }
 
 Var::Var(int var) : PropTree(TokenType::IDENTIFIER), var(var) {}
 
-bool Var::isEqual(std::shared_ptr<PropTree> other) const {
+bool Var::isEqual(const Prop other) const {
   if (other->getNodeType() != TokenType::IDENTIFIER)
     return false;
-  return static_cast<Var &>(*other).var == var;
+  return static_cast<const Var &>(*other).var == var;
 }
 
-Not::Not(std::shared_ptr<PropTree> prop)
-    : PropTree(TokenType::NOT), prop(prop) {}
+Not::Not(Prop prop) : PropTree(TokenType::NOT), prop(prop) {}
 
-bool Not::isEqual(std::shared_ptr<PropTree> other) const {
+bool Not::isEqual(const Prop other) const {
   if (other->getNodeType() != TokenType::NOT)
     return false;
-  return static_cast<Not &>(*other).prop->isEqual(prop);
+  return static_cast<const Not &>(*other).prop->isEqual(prop);
 }
 
-And::And(std::shared_ptr<PropTree> left, std::shared_ptr<PropTree> right)
+And::And(Prop left, Prop right)
     : PropTree(TokenType::AND), left(left), right(right) {}
 
-bool And::isEqual(std::shared_ptr<PropTree> other) const {
+bool And::isEqual(const Prop other) const {
   if (other->getNodeType() != TokenType::AND)
     return false;
-  else if (!static_cast<And &>(*other).left->isEqual(left))
+  else if (!static_cast<const And &>(*other).left->isEqual(left))
     return false;
-  else if (!static_cast<And &>(*other).right->isEqual(right))
+  else if (!static_cast<const And &>(*other).right->isEqual(right))
     return false;
   return true;
 }
 
-Or::Or(std::shared_ptr<PropTree> left, std::shared_ptr<PropTree> right)
+Or::Or(Prop left, Prop right)
     : PropTree(TokenType::OR), left(left), right(right) {}
 
-bool Or::isEqual(std::shared_ptr<PropTree> other) const {
+bool Or::isEqual(const Prop other) const {
   if (other->getNodeType() != TokenType::OR)
     return false;
-  else if (!static_cast<Or &>(*other).left->isEqual(left))
+  else if (!static_cast<const Or &>(*other).left->isEqual(left))
     return false;
-  else if (!static_cast<Or &>(*other).right->isEqual(right))
+  else if (!static_cast<const Or &>(*other).right->isEqual(right))
     return false;
   return true;
 }
 
-Implies::Implies(std::shared_ptr<PropTree> left,
-                 std::shared_ptr<PropTree> right)
+Implies::Implies(Prop left, Prop right)
     : PropTree(TokenType::RIGHTARROW), left(left), right(right) {}
 
-bool Implies::isEqual(std::shared_ptr<PropTree> other) const {
+bool Implies::isEqual(const Prop other) const {
   if (other->getNodeType() != TokenType::RIGHTARROW)
     return false;
-  else if (!static_cast<Implies &>(*other).left->isEqual(left))
+  else if (!static_cast<const Implies &>(*other).left->isEqual(left))
     return false;
-  else if (!static_cast<Implies &>(*other).right->isEqual(right))
+  else if (!static_cast<const Implies &>(*other).right->isEqual(right))
     return false;
   return true;
 }
 
-Equiv::Equiv(std::shared_ptr<PropTree> left, std::shared_ptr<PropTree> right)
+Equiv::Equiv(Prop left, Prop right)
     : PropTree(TokenType::EQUIV), left(left), right(right) {}
 
-bool Equiv::isEqual(std::shared_ptr<PropTree> other) const {
+bool Equiv::isEqual(const Prop other) const {
   if (other->getNodeType() != TokenType::EQUIV)
     return false;
-  else if (!static_cast<Equiv &>(*other).left->isEqual(left))
+  else if (!static_cast<const Equiv &>(*other).left->isEqual(left))
     return false;
-  else if (!static_cast<Equiv &>(*other).right->isEqual(right))
+  else if (!static_cast<const Equiv &>(*other).right->isEqual(right))
     return false;
   return true;
 }
@@ -97,17 +95,17 @@ int Var::getVar() const { return var; }
 In::In(Var left, Var right)
     : PropTree(TokenType::IN), left(left), right(right) {}
 
-bool In::isEqual(std::shared_ptr<PropTree> other) const {
+bool In::isEqual(const Prop other) const {
   if (other->getNodeType() != TokenType::IN)
     return false;
-  else if (static_cast<In &>(*other).left.getVar() != left.getVar())
+  else if (static_cast<const In &>(*other).left.getVar() != left.getVar())
     return false;
-  else if (static_cast<In &>(*other).right.getVar() != right.getVar())
+  else if (static_cast<const In &>(*other).right.getVar() != right.getVar())
     return false;
   return true;
 }
 
-Forall::Forall(std::shared_ptr<PropTree> var, std::shared_ptr<PropTree> prop)
+Forall::Forall(Prop var, Prop prop)
     : PropTree(TokenType::FORALL), var(var), prop(prop) {
   if (var->getNodeType() != TokenType::IDENTIFIER &&
       var->getNodeType() != TokenType::IN)
@@ -116,17 +114,17 @@ Forall::Forall(std::shared_ptr<PropTree> var, std::shared_ptr<PropTree> prop)
         "argument");
 }
 
-bool Forall::isEqual(std::shared_ptr<PropTree> other) const {
+bool Forall::isEqual(const Prop other) const {
   if (other->getNodeType() != TokenType::FORALL)
     return false;
-  else if (!static_cast<Forall &>(*other).var->isEqual(var))
+  else if (!static_cast<const Forall &>(*other).var->isEqual(var))
     return false;
-  else if (!static_cast<Forall &>(*other).prop->isEqual(prop))
+  else if (!static_cast<const Forall &>(*other).prop->isEqual(prop))
     return false;
   return true;
 }
 
-Exist::Exist(std::shared_ptr<PropTree> var, std::shared_ptr<PropTree> prop)
+Exist::Exist(Prop var, Prop prop)
     : PropTree(TokenType::EXIST), var(var), prop(prop) {
   if (var->getNodeType() != TokenType::IDENTIFIER &&
       var->getNodeType() != TokenType::IN)
@@ -135,22 +133,48 @@ Exist::Exist(std::shared_ptr<PropTree> var, std::shared_ptr<PropTree> prop)
         "argument");
 }
 
-bool Exist::isEqual(std::shared_ptr<PropTree> other) const {
+bool Exist::isEqual(const Prop other) const {
   if (other->getNodeType() != TokenType::EXIST)
     return false;
-  else if (!static_cast<Exist &>(*other).var->isEqual(var))
+  else if (!static_cast<const Exist &>(*other).var->isEqual(var))
     return false;
-  else if (!static_cast<Exist &>(*other).prop->isEqual(prop))
+  else if (!static_cast<const Exist &>(*other).prop->isEqual(prop))
     return false;
   return true;
 }
 
-std::string Var::toString() const {
-  if (var >= 'A' && var <= 'z') {
-    return std::string(1, static_cast<char>(var));
+std::map<std::string, int> Var::nameToId;
+std::map<int, std::string> Var::idToName;
+int Var::nextId = 256;
+
+int Var::registerName(const std::string &name) {
+  if (name.length() == 1) {
+    return static_cast<int>(name[0]);
   }
-  return std::to_string(var);
+  if (nameToId.find(name) != nameToId.end()) {
+    return nameToId[name];
+  }
+  int id = nextId++;
+  nameToId[name] = id;
+  idToName[id] = name;
+  return id;
 }
+
+std::string Var::getName(int id) {
+  if (id < 256) {
+    if ((id >= 'A' && id <= 'Z') || (id >= 'a' && id <= 'z')) {
+      return std::string(1, static_cast<char>(id));
+    }
+    return std::to_string(id);
+  }
+  auto it = idToName.find(id);
+  if (it != idToName.end()) {
+    return it->second;
+  }
+  return "?" + std::to_string(id);
+}
+
+std::string Var::toString() const { return getName(var); }
 
 std::string Not::toString() const { return "~" + prop->toString(); }
 
@@ -158,13 +182,22 @@ std::string And::toString() const {
   return "(" + left->toString() + " /\\ " + right->toString() + ")";
 }
 
+Prop And::getLeft() const { return left; }
+Prop And::getRight() const { return right; }
+
 std::string Or::toString() const {
   return "(" + left->toString() + " \\/ " + right->toString() + ")";
 }
 
+Prop Or::getLeft() const { return left; }
+Prop Or::getRight() const { return right; }
+
 std::string Implies::toString() const {
   return "(" + left->toString() + " -> " + right->toString() + ")";
 }
+
+Prop Implies::getLeft() const { return left; }
+Prop Implies::getRight() const { return right; }
 
 std::string Equiv::toString() const {
   return "(" + left->toString() + " <=> " + right->toString() + ")";
@@ -185,12 +218,13 @@ std::string Exist::toString() const {
 Equal::Equal(Var left, Var right)
     : PropTree(TokenType::EQUAL), left(left), right(right) {}
 
-bool Equal::isEqual(std::shared_ptr<PropTree> other) const {
+bool Equal::isEqual(const Prop other) const {
   if (other->getNodeType() != TokenType::EQUAL)
     return false;
-  else if (!(static_cast<Equal &>(*other).left.getVar() == left.getVar()))
+  else if (!(static_cast<const Equal &>(*other).left.getVar() == left.getVar()))
     return false;
-  else if (!(static_cast<Equal &>(*other).right.getVar() == right.getVar()))
+  else if (!(static_cast<const Equal &>(*other).right.getVar() ==
+             right.getVar()))
     return false;
   return true;
 }
@@ -199,6 +233,39 @@ std::string Equal::toString() const {
   return "(" + left.toString() + " = " + right.toString() + ")";
 }
 
-AndL_1::AndL_1() : Rule() {}
+const std::vector<Prop> &Sequent::getAntecedents() const { return antecedents; }
+const std::vector<Prop> &Sequent::getSuccedents() const { return succedents; }
 
-Sequent AndL_1::apply(std::vector<Sequent> sequents) const {}
+Sequent Sequent::addAntecedent(Prop p) const {
+  std::vector<Prop> newAnt = antecedents;
+  newAnt.push_back(p);
+  return Sequent(newAnt, succedents);
+}
+
+Sequent Sequent::addSuccedent(Prop p) const {
+  std::vector<Prop> newSuc = succedents;
+  newSuc.push_back(p);
+  return Sequent(antecedents, newSuc);
+}
+
+Sequent Sequent::removeAntecedent(size_t index) const {
+  std::vector<Prop> newAnt = antecedents;
+  if (index < newAnt.size())
+    newAnt.erase(newAnt.begin() + index);
+  return Sequent(newAnt, succedents);
+}
+
+Sequent Sequent::removeSuccedent(size_t index) const {
+  std::vector<Prop> newSuc = succedents;
+  if (index < newSuc.size())
+    newSuc.erase(newSuc.begin() + index);
+  return Sequent(antecedents, newSuc);
+}
+
+AndL_1::AndL_1(Prop p) : Rule(), p(p) {}
+
+Sequent AndL_1::apply(const Sequent &seq) const {
+  auto ants = seq.getAntecedents();
+  ants.back() = static_pointer_cast<PropTree>(make_shared<And>(ants.back(), p));
+  return {ants, seq.getSuccedents()};
+}

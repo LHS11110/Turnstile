@@ -119,16 +119,21 @@ std::shared_ptr<Sequent> Parser::parseSequent() {
   std::vector<Prop> antecedents;
   std::vector<Prop> succedents;
 
+  size_t declLine = peek().line;
+
   if (!check(TokenType::TURNSTILE)) {
     antecedents.push_back(parseProposition());
-    while (match(TokenType::COMMA)) {
+    while (match(TokenType::COMMA) && peek().line == declLine) {
       antecedents.push_back(parseProposition());
     }
   }
 
-  consume(TokenType::TURNSTILE, "Expected '|-' in Sequent");
+  Token turnstile =
+      consume(TokenType::TURNSTILE, "Expected '|-' in Sequent");
+  size_t seqLine = turnstile.line;
 
-  while (!check(TokenType::INDENT) && !check(TokenType::QED) && !isAtEnd()) {
+  while (!check(TokenType::INDENT) && !check(TokenType::QED) && !isAtEnd() &&
+         peek().line == seqLine) {
     succedents.push_back(parseProposition());
     if (!match(TokenType::COMMA)) {
       break;
@@ -154,9 +159,8 @@ std::shared_ptr<PropTree> Parser::parseEquivalence() {
 
 std::shared_ptr<PropTree> Parser::parseImplication() {
   auto expr = parseOr();
-  while (match(TokenType::RIGHTARROW)) {
-    Token op = previous();
-    auto right = parseOr();
+  if (match(TokenType::RIGHTARROW)) {
+    auto right = parseImplication();
     expr = std::make_shared<Implies>(expr, right);
   }
   return expr;
@@ -188,12 +192,46 @@ std::shared_ptr<PropTree> Parser::parseUnary() {
     auto right = parseUnary(); // Right-associative or recursive desc
     return std::make_shared<Not>(right);
   }
+  if (match(TokenType::FORALL)) {
+    if (!match(TokenType::IDENTIFIER))
+      throw ParserError("Expected variable after forall", peek());
+    auto varNode = std::make_shared<Var>(Var::registerName(previous().value));
+    match(TokenType::COMMA);
+    auto prop = parseProposition();
+    return std::make_shared<Forall>(varNode, prop);
+  }
+  if (match(TokenType::EXIST)) {
+    if (!match(TokenType::IDENTIFIER))
+      throw ParserError("Expected variable after exists", peek());
+    auto varNode = std::make_shared<Var>(Var::registerName(previous().value));
+    match(TokenType::COMMA);
+    auto prop = parseProposition();
+    return std::make_shared<Exist>(varNode, prop);
+  }
   return parsePrimary();
 }
 
 std::shared_ptr<PropTree> Parser::parsePrimary() {
   if (match(TokenType::IDENTIFIER)) {
-    return std::make_shared<Var>(static_cast<int>(previous().value[0]));
+    int varId = Var::registerName(previous().value);
+    auto varNode = std::make_shared<Var>(varId);
+
+    if (match(TokenType::EQUAL)) {
+      if (match(TokenType::IDENTIFIER)) {
+        int rightId = Var::registerName(previous().value);
+        return std::make_shared<Equal>(*varNode, Var(rightId));
+      } else {
+        throw ParserError("Expected identifier after '='", peek());
+      }
+    } else if (match(TokenType::IN)) {
+      if (match(TokenType::IDENTIFIER)) {
+        int rightId = Var::registerName(previous().value);
+        return std::make_shared<In>(*varNode, Var(rightId));
+      } else {
+        throw ParserError("Expected identifier after 'in'", peek());
+      }
+    }
+    return varNode;
   }
   if (match(TokenType::DELIMITER) && previous().value == "(") {
     auto expr = parseProposition();
