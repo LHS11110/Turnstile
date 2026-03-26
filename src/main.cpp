@@ -4,7 +4,7 @@
 #include <vector>
 
 int main() {
-  Prop a = std::make_shared<Var>("A");
+  Prop a = std::make_shared<Var>("A"); // 명제 상수 도입
   auto id = Identity(a);
   Sequent idSeq = id.apply({});
   std::cout << idSeq.toString() << '\n';
