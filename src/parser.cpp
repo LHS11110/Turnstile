@@ -128,8 +128,7 @@ std::shared_ptr<Sequent> Parser::parseSequent() {
     }
   }
 
-  Token turnstile =
-      consume(TokenType::TURNSTILE, "Expected '|-' in Sequent");
+  Token turnstile = consume(TokenType::TURNSTILE, "Expected '|-' in Sequent");
   size_t seqLine = turnstile.line;
 
   while (!check(TokenType::INDENT) && !check(TokenType::QED) && !isAtEnd() &&
@@ -143,11 +142,11 @@ std::shared_ptr<Sequent> Parser::parseSequent() {
   return std::make_shared<Sequent>(antecedents, succedents);
 }
 
-std::shared_ptr<PropTree> Parser::parseProposition() {
+std::shared_ptr<PropNode> Parser::parseProposition() {
   return parseEquivalence(); // lowest priority
 }
 
-std::shared_ptr<PropTree> Parser::parseEquivalence() {
+std::shared_ptr<PropNode> Parser::parseEquivalence() {
   auto expr = parseImplication();
   while (match(TokenType::EQUIV)) {
     Token op = previous();
@@ -157,7 +156,7 @@ std::shared_ptr<PropTree> Parser::parseEquivalence() {
   return expr;
 }
 
-std::shared_ptr<PropTree> Parser::parseImplication() {
+std::shared_ptr<PropNode> Parser::parseImplication() {
   auto expr = parseOr();
   if (match(TokenType::RIGHTARROW)) {
     auto right = parseImplication();
@@ -166,7 +165,7 @@ std::shared_ptr<PropTree> Parser::parseImplication() {
   return expr;
 }
 
-std::shared_ptr<PropTree> Parser::parseOr() {
+std::shared_ptr<PropNode> Parser::parseOr() {
   auto expr = parseAnd();
   while (match(TokenType::OR)) {
     Token op = previous();
@@ -176,7 +175,7 @@ std::shared_ptr<PropTree> Parser::parseOr() {
   return expr;
 }
 
-std::shared_ptr<PropTree> Parser::parseAnd() {
+std::shared_ptr<PropNode> Parser::parseAnd() {
   auto expr = parseUnary();
   while (match(TokenType::AND)) {
     Token op = previous();
@@ -186,7 +185,7 @@ std::shared_ptr<PropTree> Parser::parseAnd() {
   return expr;
 }
 
-std::shared_ptr<PropTree> Parser::parseUnary() {
+std::shared_ptr<PropNode> Parser::parseUnary() {
   if (match(TokenType::NOT)) {
     Token op = previous();
     auto right = parseUnary(); // Right-associative or recursive desc
@@ -195,7 +194,7 @@ std::shared_ptr<PropTree> Parser::parseUnary() {
   if (match(TokenType::FORALL)) {
     if (!match(TokenType::IDENTIFIER))
       throw ParserError("Expected variable after forall", peek());
-    auto varNode = std::make_shared<Var>(Var::registerName(previous().value));
+    auto varNode = std::make_shared<Var>(previous().value);
     match(TokenType::COMMA);
     auto prop = parseProposition();
     return std::make_shared<Forall>(varNode, prop);
@@ -203,7 +202,7 @@ std::shared_ptr<PropTree> Parser::parseUnary() {
   if (match(TokenType::EXIST)) {
     if (!match(TokenType::IDENTIFIER))
       throw ParserError("Expected variable after exists", peek());
-    auto varNode = std::make_shared<Var>(Var::registerName(previous().value));
+    auto varNode = std::make_shared<Var>(previous().value);
     match(TokenType::COMMA);
     auto prop = parseProposition();
     return std::make_shared<Exist>(varNode, prop);
@@ -211,22 +210,19 @@ std::shared_ptr<PropTree> Parser::parseUnary() {
   return parsePrimary();
 }
 
-std::shared_ptr<PropTree> Parser::parsePrimary() {
+std::shared_ptr<PropNode> Parser::parsePrimary() {
   if (match(TokenType::IDENTIFIER)) {
-    int varId = Var::registerName(previous().value);
-    auto varNode = std::make_shared<Var>(varId);
+    auto varNode = std::make_shared<Var>(previous().value);
 
     if (match(TokenType::EQUAL)) {
       if (match(TokenType::IDENTIFIER)) {
-        int rightId = Var::registerName(previous().value);
-        return std::make_shared<Equal>(*varNode, Var(rightId));
+        return std::make_shared<Equal>(*varNode, Var(previous().value));
       } else {
         throw ParserError("Expected identifier after '='", peek());
       }
     } else if (match(TokenType::IN)) {
       if (match(TokenType::IDENTIFIER)) {
-        int rightId = Var::registerName(previous().value);
-        return std::make_shared<In>(*varNode, Var(rightId));
+        return std::make_shared<In>(*varNode, Var(previous().value));
       } else {
         throw ParserError("Expected identifier after 'in'", peek());
       }

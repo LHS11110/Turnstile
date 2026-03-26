@@ -23,9 +23,10 @@ target_include_directories(turnstile PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-# Optional: Enable warnings
+# Enable warnings
 if(MSVC)
     target_compile_options(turnstile PRIVATE /W4)
 else()
     target_compile_options(turnstile PRIVATE -Wall -Wextra -pedantic)
 endif()
+

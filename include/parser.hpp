@@ -30,11 +30,11 @@ private:
 
   std::shared_ptr<TheoremNode> parseTheorem();
   std::shared_ptr<Sequent> parseSequent();
-  std::shared_ptr<PropTree> parseProposition();
-  std::shared_ptr<PropTree> parseEquivalence();
-  std::shared_ptr<PropTree> parseImplication();
-  std::shared_ptr<PropTree> parseOr();
-  std::shared_ptr<PropTree> parseAnd();
-  std::shared_ptr<PropTree> parseUnary();
-  std::shared_ptr<PropTree> parsePrimary();
+  std::shared_ptr<PropNode> parseProposition();
+  std::shared_ptr<PropNode> parseEquivalence();
+  std::shared_ptr<PropNode> parseImplication();
+  std::shared_ptr<PropNode> parseOr();
+  std::shared_ptr<PropNode> parseAnd();
+  std::shared_ptr<PropNode> parseUnary();
+  std::shared_ptr<PropNode> parsePrimary();
 };

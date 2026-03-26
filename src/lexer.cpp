@@ -66,7 +66,7 @@ Token Lexer::scanString() {
   std::string value;
 
   while (!isAtEnd() && peek() != '"') {
-    if (peek() == '\\' && !isAtEnd()) { // 이스케이프 문자 처리
+    if (peek() == '\\' && pos + 1 < source.length()) { // 이스케이프 문자 처리
       advance();
       char escaped = advance();
       switch (escaped) {
