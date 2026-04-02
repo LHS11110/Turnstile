@@ -13,11 +13,11 @@ public:
 
 class Parser {
 public:
-  explicit Parser(std::vector<Token> tokens);
+  explicit Parser(const std::vector<Token>& tokens);
   std::vector<std::shared_ptr<TheoremNode>> parse();
 
 private:
-  std::vector<Token> tokens;
+  const std::vector<Token>& tokens;
   size_t pos;
 
   const Token &peek() const;

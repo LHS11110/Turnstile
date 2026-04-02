@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 enum class TokenType {
@@ -35,18 +36,18 @@ enum class TokenType {
 
 struct Token {
   TokenType type;
-  std::string value;
+  std::string_view value;
   size_t line;
   size_t column;
 };
 
 class Lexer {
 public:
-  Lexer(const std::string &source);
+  Lexer(std::string_view source);
   std::vector<Token> tokenize();
 
 private:
-  std::string source;
+  std::string_view source;
   size_t pos;
   size_t line;
   size_t column;

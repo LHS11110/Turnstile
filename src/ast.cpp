@@ -15,7 +15,7 @@ std::string TheoremNode::toString() const {
     if (t.type == TokenType::END_OF_FILE)
       res += "[EOF]";
     else
-      res += t.value + " ";
+      res += std::string(t.value) + " ";
   }
   res += "\n";
   return res;

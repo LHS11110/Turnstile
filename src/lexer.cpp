@@ -1,7 +1,9 @@
 #include "lexer.hpp"
 #include <cctype>
+#include <unordered_map>
+#include <string_view>
 
-Lexer::Lexer(const std::string &source)
+Lexer::Lexer(std::string_view source)
     : source(source), pos(0), line(1), column(1) {}
 
 char Lexer::peek(size_t offset) const {
@@ -63,34 +65,18 @@ Token Lexer::scanString() {
   size_t startCol = column;
   size_t startLine = line;
   advance(); // 여는 큰따옴표 소비
-  std::string value;
+  size_t startPos = pos;
 
   while (!isAtEnd() && peek() != '"') {
-    if (peek() == '\\' && pos + 1 < source.length()) { // 이스케이프 문자 처리
+    if (peek() == '\\' && pos + 1 < source.length()) { // 이스케이프 문자 통과
       advance();
-      char escaped = advance();
-      switch (escaped) {
-      case 'n':
-        value += '\n';
-        break;
-      case 't':
-        value += '\t';
-        break;
-      case '\\':
-        value += '\\';
-        break;
-      case '"':
-        value += '"';
-        break;
-      default:
-        value += '\\';
-        value += escaped;
-        break;
-      }
+      advance();
     } else {
-      value += advance();
+      advance();
     }
   }
+
+  std::string_view value = source.substr(startPos, pos - startPos);
 
   if (!isAtEnd()) {
     advance(); // 닫는 큰따옴표 소비
@@ -102,73 +88,74 @@ Token Lexer::scanString() {
 Token Lexer::scanNumber() {
   size_t startCol = column;
   size_t startLine = line;
-  std::string value;
+  size_t startPos = pos;
 
   while (!isAtEnd() && std::isdigit(peek())) {
-    value += advance();
+    advance();
   }
 
   // 소수점 처리 (예: 3.14)
   if (peek() == '.' && std::isdigit(peek(1))) {
-    value += advance(); // '.' 소비
+    advance(); // '.' 소비
     while (!isAtEnd() && std::isdigit(peek())) {
-      value += advance();
+      advance();
     }
   }
 
+  std::string_view value = source.substr(startPos, pos - startPos);
   return {TokenType::LITERAL, value, startLine, startCol}; // 정수 및 실수
 }
 
 Token Lexer::scanIdentifierOrKeyword() {
   size_t startCol = column;
   size_t startLine = line;
-  std::string value;
+  size_t startPos = pos;
 
   // 식별자는 문자나 밑줄로 시작하여 영숫자 및 밑줄로 구성됨
   while (!isAtEnd() && (std::isalnum(peek()) || peek() == '_')) {
-    value += advance();
+    advance();
   }
+
+  std::string_view value = source.substr(startPos, pos - startPos);
 
   TokenType type = TokenType::IDENTIFIER;
 
-  // 예약어 확인
-  if (value == "theorem")
-    type = TokenType::THEOREM;
-  else if (value == "axiom")
-    type = TokenType::AXIOM;
-  else if (value == "qed")
-    type = TokenType::QED;
-  else if (value == "sorry")
-    type = TokenType::SORRY;
-  else if (value == "forall")
-    type = TokenType::FORALL;
-  else if (value == "exists")
-    type = TokenType::EXIST;
-  else if (value == "in")
-    type = TokenType::IN;
-  // Proof Rules
-  else if (value == "id") type = TokenType::ID;
-  else if (value == "cut") type = TokenType::CUT;
-  else if (value == "andL1") type = TokenType::ANDL1;
-  else if (value == "andL2") type = TokenType::ANDL2;
-  else if (value == "orL") type = TokenType::ORL;
-  else if (value == "implL") type = TokenType::IMPLL;
-  else if (value == "notL") type = TokenType::NOTL;
-  else if (value == "forallL") type = TokenType::FORALLL;
-  else if (value == "existL") type = TokenType::EXISTL;
-  else if (value == "wl") type = TokenType::WL;
-  else if (value == "cl") type = TokenType::CL;
-  else if (value == "pl") type = TokenType::PL;
-  else if (value == "orR1") type = TokenType::ORR1;
-  else if (value == "orR2") type = TokenType::ORR2;
-  else if (value == "andR") type = TokenType::ANDR;
-  else if (value == "implR") type = TokenType::IMPLR;
-  else if (value == "notR") type = TokenType::NOTR;
-  else if (value == "forallR") type = TokenType::FORALLR;
-  else if (value == "existR") type = TokenType::EXISTR;
-  else if (value == "wr") type = TokenType::WR;
-  else if (value == "cr") type = TokenType::CR;
-  else if (value == "pr") type = TokenType::PR;
+  static const std::unordered_map<std::string, TokenType> keywords = {
+      {"theorem", TokenType::THEOREM},
+      {"axiom", TokenType::AXIOM},
+      {"qed", TokenType::QED},
+      {"sorry", TokenType::SORRY},
+      {"forall", TokenType::FORALL},
+      {"exists", TokenType::EXIST},
+      {"in", TokenType::IN},
+      {"id", TokenType::ID},
+      {"cut", TokenType::CUT},
+      {"andL1", TokenType::ANDL1},
+      {"andL2", TokenType::ANDL2},
+      {"orL", TokenType::ORL},
+      {"implL", TokenType::IMPLL},
+      {"notL", TokenType::NOTL},
+      {"forallL", TokenType::FORALLL},
+      {"existL", TokenType::EXISTL},
+      {"wl", TokenType::WL},
+      {"cl", TokenType::CL},
+      {"pl", TokenType::PL},
+      {"orR1", TokenType::ORR1},
+      {"orR2", TokenType::ORR2},
+      {"andR", TokenType::ANDR},
+      {"implR", TokenType::IMPLR},
+      {"notR", TokenType::NOTR},
+      {"forallR", TokenType::FORALLR},
+      {"existR", TokenType::EXISTR},
+      {"wr", TokenType::WR},
+      {"cr", TokenType::CR},
+      {"pr", TokenType::PR}
+  };
+
+  auto it = keywords.find(std::string(value));
+  if (it != keywords.end()) {
+      type = it->second;
+  }
 
   return {type, value, startLine, startCol};
 }
@@ -176,19 +163,20 @@ Token Lexer::scanIdentifierOrKeyword() {
 Token Lexer::scanOperatorOrDelimiter() {
   size_t startCol = column;
   size_t startLine = line;
+  size_t startPos = pos;
   char c = advance();
-  std::string value(1, c);
 
   if (isDelimiter(c)) {
-    if (c == ',') return {TokenType::COMMA, value, startLine, startCol};
-    return {TokenType::DELIMITER, value, startLine, startCol};
+    if (c == ',') return {TokenType::COMMA, source.substr(startPos, 1), startLine, startCol};
+    return {TokenType::DELIMITER, source.substr(startPos, 1), startLine, startCol};
   }
 
   // '\'로 시작하는 양화사 처리 (예: \forall, \exists)
   if (c == '\\' && std::isalpha(peek())) {
     while (!isAtEnd() && std::isalpha(peek())) {
-      value += advance();
+      advance();
     }
+    std::string_view value = source.substr(startPos, pos - startPos);
     if (value == "\\forall") return {TokenType::FORALL, value, startLine, startCol};
     if (value == "\\exists") return {TokenType::EXIST, value, startLine, startCol};
     if (value == "\\in") return {TokenType::IN, value, startLine, startCol};
@@ -197,8 +185,10 @@ Token Lexer::scanOperatorOrDelimiter() {
 
   // 다른 연산자 기호들을 묶음 (예: ->, <=, /\, \/)
   while (!isAtEnd() && isOperatorChar(peek()) && !isDelimiter(peek())) {
-    value += advance();
+    advance();
   }
+
+  std::string_view value = source.substr(startPos, pos - startPos);
 
   if (value == "\\/") return {TokenType::OR, value, startLine, startCol};
   if (value == "/\\") return {TokenType::AND, value, startLine, startCol};
@@ -252,8 +242,9 @@ Token Lexer::nextToken() {
   // 알 수 없는 문자 처리
   size_t startCol = column;
   size_t startLine = line;
-  std::string val(1, advance());
-  return {TokenType::UNKNOWN, val, startLine, startCol};
+  size_t startPos = pos;
+  advance();
+  return {TokenType::UNKNOWN, source.substr(startPos, 1), startLine, startCol};
 }
 
 std::vector<Token> Lexer::tokenize() {
