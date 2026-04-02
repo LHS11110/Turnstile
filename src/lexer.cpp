@@ -146,6 +146,29 @@ Token Lexer::scanIdentifierOrKeyword() {
     type = TokenType::EXIST;
   else if (value == "in")
     type = TokenType::IN;
+  // Proof Rules
+  else if (value == "id") type = TokenType::ID;
+  else if (value == "cut") type = TokenType::CUT;
+  else if (value == "andL1") type = TokenType::ANDL1;
+  else if (value == "andL2") type = TokenType::ANDL2;
+  else if (value == "orL") type = TokenType::ORL;
+  else if (value == "implL") type = TokenType::IMPLL;
+  else if (value == "notL") type = TokenType::NOTL;
+  else if (value == "forallL") type = TokenType::FORALLL;
+  else if (value == "existL") type = TokenType::EXISTL;
+  else if (value == "wl") type = TokenType::WL;
+  else if (value == "cl") type = TokenType::CL;
+  else if (value == "pl") type = TokenType::PL;
+  else if (value == "orR1") type = TokenType::ORR1;
+  else if (value == "orR2") type = TokenType::ORR2;
+  else if (value == "andR") type = TokenType::ANDR;
+  else if (value == "implR") type = TokenType::IMPLR;
+  else if (value == "notR") type = TokenType::NOTR;
+  else if (value == "forallR") type = TokenType::FORALLR;
+  else if (value == "existR") type = TokenType::EXISTR;
+  else if (value == "wr") type = TokenType::WR;
+  else if (value == "cr") type = TokenType::CR;
+  else if (value == "pr") type = TokenType::PR;
 
   return {type, value, startLine, startCol};
 }
@@ -292,6 +315,28 @@ std::string tokenTypeToString(TokenType type) {
     return "TURNSTILE";
   case TokenType::COMMA:
     return "COMMA";
+  case TokenType::ID: return "ID";
+  case TokenType::CUT: return "CUT";
+  case TokenType::ANDL1: return "ANDL1";
+  case TokenType::ANDL2: return "ANDL2";
+  case TokenType::ORL: return "ORL";
+  case TokenType::IMPLL: return "IMPLL";
+  case TokenType::NOTL: return "NOTL";
+  case TokenType::FORALLL: return "FORALLL";
+  case TokenType::EXISTL: return "EXISTL";
+  case TokenType::WL: return "WL";
+  case TokenType::CL: return "CL";
+  case TokenType::PL: return "PL";
+  case TokenType::ORR1: return "ORR1";
+  case TokenType::ORR2: return "ORR2";
+  case TokenType::ANDR: return "ANDR";
+  case TokenType::IMPLR: return "IMPLR";
+  case TokenType::NOTR: return "NOTR";
+  case TokenType::FORALLR: return "FORALLR";
+  case TokenType::EXISTR: return "EXISTR";
+  case TokenType::WR: return "WR";
+  case TokenType::CR: return "CR";
+  case TokenType::PR: return "PR";
   default:
     return "???";
   }

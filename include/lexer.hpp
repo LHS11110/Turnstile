@@ -26,7 +26,11 @@ enum class TokenType {
   END_OF_FILE, // EOF
   UNKNOWN,     // 알 수 없는 토큰
   TURNSTILE,   // |-
-  COMMA        // ,
+  COMMA,       // ,
+  // Proof Rules
+  ID, CUT,
+  ANDL1, ANDL2, ORL, IMPLL, NOTL, FORALLL, EXISTL, WL, CL, PL,
+  ORR1, ORR2, ANDR, IMPLR, NOTR, FORALLR, EXISTR, WR, CR, PR
 };
 
 struct Token {
