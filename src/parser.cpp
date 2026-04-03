@@ -68,10 +68,10 @@ std::shared_ptr<TheoremNode> Parser::parseTheorem() {
     theorem->proposition = parseSequent();
   }
 
-  size_t currentLine = previous().line;
-  bool hasStartedProof = false;
-
   { // Parse proofs(or body) of theorem
+    size_t currentLine = previous().line;
+    bool hasStartedProof = false;
+
     // Collect proof tokens until \nqed
     while (!isAtEnd() && !check(TokenType::QED)) {
       Token t = peek();
