@@ -1,6 +1,6 @@
 #include "parser.hpp"
 
-Parser::Parser(const std::vector<Token>& tokens) : tokens(tokens), pos(0) {}
+Parser::Parser(const std::vector<Token> &tokens) : tokens(tokens), pos(0) {}
 
 const Token &Parser::peek() const { return tokens[pos]; }
 
@@ -52,64 +52,69 @@ std::vector<std::shared_ptr<TheoremNode>> Parser::parse() {
 
 std::shared_ptr<TheoremNode> Parser::parseTheorem() {
   auto theorem = std::make_shared<TheoremNode>();
+  { // Parse head of theorem
+    Token nameToken;
+    if (check(TokenType::IDENTIFIER) || check(TokenType::STRING)) {
+      nameToken = advance();
+    } else {
+      throw ParserError("Expected theorem name (identifier or string)", peek());
+    }
+    theorem->name = std::string(nameToken.value);
 
-  Token nameToken;
-  if (check(TokenType::IDENTIFIER) || check(TokenType::STRING)) {
-    nameToken = advance();
-  } else {
-    throw ParserError("Expected theorem name (identifier or string)", peek());
+    if (!match(TokenType::COLON_EQ)) {
+      throw ParserError("Expected ':=' after theorem name", peek());
+    }
+
+    theorem->proposition = parseSequent();
   }
-  theorem->name = std::string(nameToken.value);
-
-  if (!match(TokenType::COLON_EQ)) {
-    throw ParserError("Expected ':=' after theorem name", peek());
-  }
-
-  theorem->proposition = parseSequent();
 
   size_t currentLine = previous().line;
   bool hasStartedProof = false;
 
-  // Collect proof tokens until \nqed
-  while (!isAtEnd() && !check(TokenType::QED)) {
-    Token t = peek();
+  { // Parse proofs(or body) of theorem
+    // Collect proof tokens until \nqed
+    while (!isAtEnd() && !check(TokenType::QED)) {
+      Token t = peek();
 
-    // 새 줄이 시작될 때마다 반드시 INDENT가 있어야 함
-    if (t.line > currentLine) {
-      if (t.type != TokenType::INDENT) {
-        throw ParserError("Proof lines must be indented with 4 spaces", t);
+      // 새 줄이 시작될 때마다 반드시 INDENT가 있어야 함
+      if (t.line > currentLine) {
+        if (t.type != TokenType::INDENT) {
+          throw ParserError("Proof lines must be indented with 4 spaces", t);
+        }
+      } else if (!hasStartedProof && t.type != TokenType::INDENT) {
+        // 첫 증명 토큰이 새로운 줄(INDENT)에서 시작하지 않은 경우
+        throw ParserError("Proof must start on a new indented line", t);
       }
-    } else if (!hasStartedProof && t.type != TokenType::INDENT) {
-      // 첫 증명 토큰이 새로운 줄(INDENT)에서 시작하지 않은 경우
-      throw ParserError("Proof must start on a new indented line", t);
-    }
 
-    currentLine = t.line;
-    t = advance();
-    hasStartedProof = true;
+      currentLine = t.line;
+      t = advance();
+      hasStartedProof = true;
 
-    // INDENT 토큰은 증명 토큰 리스트에서 생략함
-    if (t.type == TokenType::INDENT) {
-      continue;
-    }
+      // INDENT 토큰은 증명 토큰 리스트에서 생략함
+      if (t.type == TokenType::INDENT) {
+        continue;
+      }
 
-    theorem->proofTokens.push_back(t);
-  }
-
-  if (check(TokenType::QED)) {
-    if (peek().column != 1) {
-      throw ParserError(
-          "'qed' must be the only token on its line without any leading spaces",
-          peek());
+      theorem->proofTokens.push_back(t);
     }
   }
 
-  Token qedToken =
-      consume(TokenType::QED, "Expected 'qed' to close theorem block");
+  { // Parse qed(or foot) of theorem
+    if (check(TokenType::QED)) {
+      if (peek().column != 1) {
+        throw ParserError("'qed' must be the only token on its line without "
+                          "any leading spaces",
+                          peek());
+      }
+    }
 
-  // qed 이후 같은 줄에 다른 토큰이 오면 에러 처리
-  if (!isAtEnd() && peek().line == qedToken.line) {
-    throw ParserError("'qed' must be the only token on its line", peek());
+    Token qedToken =
+        consume(TokenType::QED, "Expected 'qed' to close theorem block");
+
+    // qed 이후 같은 줄에 다른 토큰이 오면 에러 처리
+    if (!isAtEnd() && peek().line == qedToken.line) {
+      throw ParserError("'qed' must be the only token on its line", peek());
+    }
   }
 
   return theorem;
@@ -216,13 +221,15 @@ std::shared_ptr<PropNode> Parser::parsePrimary() {
 
     if (match(TokenType::EQUAL)) {
       if (match(TokenType::IDENTIFIER)) {
-        return std::make_shared<Equal>(*varNode, Var(std::string(previous().value)));
+        return std::make_shared<Equal>(*varNode,
+                                       Var(std::string(previous().value)));
       } else {
         throw ParserError("Expected identifier after '='", peek());
       }
     } else if (match(TokenType::IN)) {
       if (match(TokenType::IDENTIFIER)) {
-        return std::make_shared<In>(*varNode, Var(std::string(previous().value)));
+        return std::make_shared<In>(*varNode,
+                                    Var(std::string(previous().value)));
       } else {
         throw ParserError("Expected identifier after 'in'", peek());
       }
