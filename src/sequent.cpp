@@ -289,24 +289,28 @@ Sequent AndL_2::apply(
 }
 
 Sequent OrL::apply(const std::vector<Sequent> &seqs)
-    const { // seqs := {Gamma, A |- Delta}, {Sigma, B |- Pi}
+    const { // seqs := {Gamma, A |- Delta}, {Gamma, B |- Delta}
   if (seqs.size() != 2)
     throw std::runtime_error("Invalid OrL application");
   std::vector<Prop> ants_1 = seqs[0].getAntecedents(); // Gamma, A
-  std::vector<Prop> ants_2 = seqs[1].getAntecedents(); // Sigma, B
+  std::vector<Prop> ants_2 = seqs[1].getAntecedents(); // Gamma, B
   std::vector<Prop> sucs_1 = seqs[0].getSuccedents();  // Delta
-  std::vector<Prop> sucs_2 = seqs[1].getSuccedents();  // Pi
-  if (ants_1.size() < 1 || ants_2.size() < 1)
+  std::vector<Prop> sucs_2 = seqs[1].getSuccedents();  // Delta
+  if (ants_1.size() < 1 || ants_2.size() < 1 ||
+      sucs_1.size() != sucs_2.size() || ants_1.size() != ants_2.size())
     throw std::runtime_error("Invalid OrL application");
-  Prop p_1 = ants_1.back();                                  // A
-  Prop p_2 = ants_2.back();                                  // B
-  ants_1.pop_back();                                         // Gamma
-  ants_2.pop_back();                                         // Sigma
-  ants_1.insert(ants_1.end(), ants_2.begin(), ants_2.end()); // Gamma, Sigma
-  sucs_1.insert(sucs_1.end(), sucs_2.begin(), sucs_2.end()); // Delta, Pi
+  for (size_t i = 0; i < sucs_1.size(); i++)
+    if (!sucs_1[i]->isEqual(sucs_2[i]))
+      throw std::runtime_error("Invalid OrL application");
+  for (size_t i = 0; i < ants_1.size() - 1; i++)
+    if (!ants_1[i]->isEqual(ants_2[i]))
+      throw std::runtime_error("Invalid OrL application");
+  Prop p_1 = ants_1.back(); // A
+  Prop p_2 = ants_2.back(); // B
+  ants_1.pop_back();        // Gamma
   ants_1.push_back(static_pointer_cast<PropNode>(
-      make_shared<Or>(p_1, p_2))); // Gamma, Sigma, A \/ B
-  return {ants_1, sucs_1};         // Gamma, Sigma, A \/ B |- Delta, Pi
+      make_shared<Or>(p_1, p_2))); // Gamma, A \/ B
+  return {ants_1, sucs_1};         // Gamma, A \/ B |- Delta
 }
 
 Sequent ImpliesL::apply(const std::vector<Sequent> &seqs)
