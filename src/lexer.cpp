@@ -1,7 +1,7 @@
 #include "lexer.hpp"
 #include <cctype>
-#include <unordered_map>
 #include <string_view>
+#include <unordered_map>
 
 Lexer::Lexer(std::string_view source)
     : source(source), pos(0), line(1), column(1) {}
@@ -78,9 +78,8 @@ Token Lexer::scanString() {
 
   std::string_view value = source.substr(startPos, pos - startPos);
 
-  if (!isAtEnd()) {
+  if (!isAtEnd())
     advance(); // 닫는 큰따옴표 소비
-  }
 
   return {TokenType::STRING, value, startLine, startCol};
 }
@@ -121,41 +120,26 @@ Token Lexer::scanIdentifierOrKeyword() {
   TokenType type = TokenType::IDENTIFIER;
 
   static const std::unordered_map<std::string, TokenType> keywords = {
-      {"theorem", TokenType::THEOREM},
-      {"axiom", TokenType::AXIOM},
-      {"qed", TokenType::QED},
-      {"sorry", TokenType::SORRY},
-      {"forall", TokenType::FORALL},
-      {"exists", TokenType::EXIST},
-      {"in", TokenType::IN},
-      {"id", TokenType::ID},
-      {"cut", TokenType::CUT},
-      {"andL1", TokenType::ANDL1},
-      {"andL2", TokenType::ANDL2},
-      {"orL", TokenType::ORL},
-      {"implL", TokenType::IMPLL},
-      {"notL", TokenType::NOTL},
-      {"forallL", TokenType::FORALLL},
-      {"existL", TokenType::EXISTL},
-      {"wl", TokenType::WL},
-      {"cl", TokenType::CL},
-      {"pl", TokenType::PL},
-      {"orR1", TokenType::ORR1},
-      {"orR2", TokenType::ORR2},
-      {"andR", TokenType::ANDR},
-      {"implR", TokenType::IMPLR},
-      {"notR", TokenType::NOTR},
-      {"forallR", TokenType::FORALLR},
-      {"existR", TokenType::EXISTR},
-      {"wr", TokenType::WR},
-      {"cr", TokenType::CR},
-      {"pr", TokenType::PR}
-  };
+      {"theorem", TokenType::THEOREM}, {"axiom", TokenType::AXIOM},
+      {"qed", TokenType::QED},         {"sorry", TokenType::SORRY},
+      {"forall", TokenType::FORALL},   {"exists", TokenType::EXIST},
+      {"in", TokenType::IN},           {"id", TokenType::ID},
+      {"cut", TokenType::CUT},         {"andL1", TokenType::ANDL1},
+      {"andL2", TokenType::ANDL2},     {"orL", TokenType::ORL},
+      {"implL", TokenType::IMPLL},     {"notL", TokenType::NOTL},
+      {"forallL", TokenType::FORALLL}, {"existL", TokenType::EXISTL},
+      {"wl", TokenType::WL},           {"cl", TokenType::CL},
+      {"pl", TokenType::PL},           {"orR1", TokenType::ORR1},
+      {"orR2", TokenType::ORR2},       {"andR", TokenType::ANDR},
+      {"implR", TokenType::IMPLR},     {"notR", TokenType::NOTR},
+      {"forallR", TokenType::FORALLR}, {"existR", TokenType::EXISTR},
+      {"wr", TokenType::WR},           {"cr", TokenType::CR},
+      {"pr", TokenType::PR},           {"new_branch", TokenType::NEW_BRANCH},
+      {"end", TokenType::END_BRANCH}};
 
   auto it = keywords.find(std::string(value));
-  if (it != keywords.end()) {
-      type = it->second;
-  }
+  if (it != keywords.end())
+    type = it->second;
 
   return {type, value, startLine, startCol};
 }
@@ -167,8 +151,11 @@ Token Lexer::scanOperatorOrDelimiter() {
   char c = advance();
 
   if (isDelimiter(c)) {
-    if (c == ',') return {TokenType::COMMA, source.substr(startPos, 1), startLine, startCol};
-    return {TokenType::DELIMITER, source.substr(startPos, 1), startLine, startCol};
+    if (c == ',')
+      return {TokenType::COMMA, source.substr(startPos, 1), startLine,
+              startCol};
+    return {TokenType::DELIMITER, source.substr(startPos, 1), startLine,
+            startCol};
   }
 
   // '\'로 시작하는 양화사 처리 (예: \forall, \exists)
@@ -177,9 +164,12 @@ Token Lexer::scanOperatorOrDelimiter() {
       advance();
     }
     std::string_view value = source.substr(startPos, pos - startPos);
-    if (value == "\\forall") return {TokenType::FORALL, value, startLine, startCol};
-    if (value == "\\exists") return {TokenType::EXIST, value, startLine, startCol};
-    if (value == "\\in") return {TokenType::IN, value, startLine, startCol};
+    if (value == "\\forall")
+      return {TokenType::FORALL, value, startLine, startCol};
+    if (value == "\\exists")
+      return {TokenType::EXIST, value, startLine, startCol};
+    if (value == "\\in")
+      return {TokenType::IN, value, startLine, startCol};
     // 그 외의 경우 일반 텍스트로 간주
   }
 
@@ -190,14 +180,22 @@ Token Lexer::scanOperatorOrDelimiter() {
 
   std::string_view value = source.substr(startPos, pos - startPos);
 
-  if (value == "\\/") return {TokenType::OR, value, startLine, startCol};
-  if (value == "/\\") return {TokenType::AND, value, startLine, startCol};
-  if (value == "->") return {TokenType::RIGHTARROW, value, startLine, startCol};
-  if (value == "~") return {TokenType::NOT, value, startLine, startCol};
-  if (value == "=") return {TokenType::EQUAL, value, startLine, startCol};
-  if (value == ":=") return {TokenType::COLON_EQ, value, startLine, startCol};
-  if (value == "<=>") return {TokenType::EQUIV, value, startLine, startCol};
-  if (value == "|-") return {TokenType::TURNSTILE, value, startLine, startCol};
+  if (value == "\\/")
+    return {TokenType::OR, value, startLine, startCol};
+  if (value == "/\\")
+    return {TokenType::AND, value, startLine, startCol};
+  if (value == "->")
+    return {TokenType::RIGHTARROW, value, startLine, startCol};
+  if (value == "~")
+    return {TokenType::NOT, value, startLine, startCol};
+  if (value == "=")
+    return {TokenType::EQUAL, value, startLine, startCol};
+  if (value == ":=")
+    return {TokenType::COLON_EQ, value, startLine, startCol};
+  if (value == "<=>")
+    return {TokenType::EQUIV, value, startLine, startCol};
+  if (value == "|-")
+    return {TokenType::TURNSTILE, value, startLine, startCol};
 
   return {TokenType::UNKNOWN, value, startLine, startCol};
 }
@@ -306,28 +304,54 @@ std::string tokenTypeToString(TokenType type) {
     return "TURNSTILE";
   case TokenType::COMMA:
     return "COMMA";
-  case TokenType::ID: return "ID";
-  case TokenType::CUT: return "CUT";
-  case TokenType::ANDL1: return "ANDL1";
-  case TokenType::ANDL2: return "ANDL2";
-  case TokenType::ORL: return "ORL";
-  case TokenType::IMPLL: return "IMPLL";
-  case TokenType::NOTL: return "NOTL";
-  case TokenType::FORALLL: return "FORALLL";
-  case TokenType::EXISTL: return "EXISTL";
-  case TokenType::WL: return "WL";
-  case TokenType::CL: return "CL";
-  case TokenType::PL: return "PL";
-  case TokenType::ORR1: return "ORR1";
-  case TokenType::ORR2: return "ORR2";
-  case TokenType::ANDR: return "ANDR";
-  case TokenType::IMPLR: return "IMPLR";
-  case TokenType::NOTR: return "NOTR";
-  case TokenType::FORALLR: return "FORALLR";
-  case TokenType::EXISTR: return "EXISTR";
-  case TokenType::WR: return "WR";
-  case TokenType::CR: return "CR";
-  case TokenType::PR: return "PR";
+  case TokenType::ID:
+    return "ID";
+  case TokenType::CUT:
+    return "CUT";
+  case TokenType::ANDL1:
+    return "ANDL1";
+  case TokenType::ANDL2:
+    return "ANDL2";
+  case TokenType::ORL:
+    return "ORL";
+  case TokenType::IMPLL:
+    return "IMPLL";
+  case TokenType::NOTL:
+    return "NOTL";
+  case TokenType::FORALLL:
+    return "FORALLL";
+  case TokenType::EXISTL:
+    return "EXISTL";
+  case TokenType::WL:
+    return "WL";
+  case TokenType::CL:
+    return "CL";
+  case TokenType::PL:
+    return "PL";
+  case TokenType::ORR1:
+    return "ORR1";
+  case TokenType::ORR2:
+    return "ORR2";
+  case TokenType::ANDR:
+    return "ANDR";
+  case TokenType::IMPLR:
+    return "IMPLR";
+  case TokenType::NOTR:
+    return "NOTR";
+  case TokenType::FORALLR:
+    return "FORALLR";
+  case TokenType::EXISTR:
+    return "EXISTR";
+  case TokenType::WR:
+    return "WR";
+  case TokenType::CR:
+    return "CR";
+  case TokenType::PR:
+    return "PR";
+  case TokenType::NEW_BRANCH:
+    return "NEW_BRANCH";
+  case TokenType::END_BRANCH:
+    return "END_BRANCH";
   default:
     return "???";
   }

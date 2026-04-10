@@ -1,4 +1,5 @@
 #include "sequent.hpp"
+#include "lexer.hpp"
 #include <cstddef>
 #include <memory>
 #include <stdexcept>
@@ -158,8 +159,7 @@ int Var::registerName(const std::string &name) {
   if (nameToId.find(name) != nameToId.end())
     return nameToId[name];
   nameToId[name] = nextId;
-  idToName[nextId] = name;
-  nextId++;
+  idToName[nextId++] = name;
   return nextId - 1;
 }
 
@@ -770,3 +770,40 @@ bool Exist::checkVar(const Var &oldVar) const {
 bool Equal::checkVar(const Var &oldVar) const {
   return left.checkVar(oldVar) || right.checkVar(oldVar);
 }
+
+bool Head::isEqual(const Prop &) const { return false; }
+
+bool Head::checkVar(const Var &) const { return false; }
+
+std::string Head::toString() const {
+  return name.toString() + " := " + seq->toString();
+}
+
+Head::Head(Var name, std::shared_ptr<Sequent> seq)
+    : PropNode(TokenType::THEOREM), name(name), seq(seq) {}
+
+const Prop Head::replaceVar(const Var &, const Var &, const Prop &me) const {
+  return me;
+}
+
+Eval::Eval(std::function<Sequent(const std::vector<Sequent> &)> eval,
+           TokenType type, size_t indentLevel)
+    : PropNode(type), indentLevel(indentLevel), eval(eval) {}
+
+bool Eval::isEqual(const Prop &other) const {
+  return other->getNodeType() == this->getNodeType();
+}
+
+std::string Eval::toString() const {
+  return "Eval<" + tokenTypeToString(getNodeType()) + ">";
+}
+
+const Prop Eval::replaceVar(const Var &, const Var &, const Prop &me) const {
+  return me;
+}
+
+bool Eval::checkVar(const Var &) const { return false; }
+
+Sequent Eval::apply(const std::vector<Sequent> &seq) const { return eval(seq); }
+
+bool Var::operator==(const Var &other) const { return this->var == other.var; }

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "lexer.hpp"
+#include <cstddef>
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -48,6 +50,8 @@ public:
   virtual const Prop replaceVar(const Var &oldVar, const Var &newVar,
                                 const Prop &) const override;
   virtual bool checkVar(const Var &) const override;
+
+  bool operator==(const Var &other) const;
 };
 
 class Not : public PropNode {
@@ -389,4 +393,37 @@ private:
 public:
   PermutationR(size_t i);
   Sequent apply(const std::vector<Sequent> &seq) const override;
+};
+
+class Head : public PropNode {
+private:
+  Var name;                     // theorem name
+  std::shared_ptr<Sequent> seq; // theorem
+
+public:
+  Head(Var name, std::shared_ptr<Sequent> seq);
+  bool isEqual(const Prop &) const override;
+  std::string toString() const override;
+
+  virtual const Prop replaceVar(const Var &oldVar, const Var &newVar,
+                                const Prop &) const override;
+  virtual bool checkVar(const Var &) const override;
+};
+
+class Eval : public PropNode {
+private:
+  const size_t indentLevel;
+  const std::function<Sequent(const std::vector<Sequent> &)> eval;
+
+public:
+  Eval(std::function<Sequent(const std::vector<Sequent> &)> eval,
+       TokenType type, size_t indentLevel);
+  bool isEqual(const Prop &) const override;
+  std::string toString() const override;
+
+  virtual const Prop replaceVar(const Var &oldVar, const Var &newVar,
+                                const Prop &) const override;
+  virtual bool checkVar(const Var &) const override;
+
+  Sequent apply(const std::vector<Sequent> &seq) const;
 };

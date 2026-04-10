@@ -1,4 +1,5 @@
 #include "parser.hpp"
+#include "sequent.hpp"
 
 Parser::Parser(const std::vector<Token> &tokens) : tokens(tokens), pos(0) {}
 
@@ -34,8 +35,8 @@ Token Parser::consume(TokenType type, const std::string &message) {
   throw ParserError(message, peek());
 }
 
-std::vector<std::shared_ptr<TheoremNode>> Parser::parse() {
-  std::vector<std::shared_ptr<TheoremNode>> theorems;
+/*
+std::vector<std::shared_ptr<TheoremNode>> theorems;
   while (!isAtEnd()) {
     // Skip stray indents or newlines if any
     if (match(TokenType::INDENT))
@@ -48,76 +49,240 @@ std::vector<std::shared_ptr<TheoremNode>> Parser::parse() {
     }
   }
   return theorems;
-}
-
-std::shared_ptr<TheoremNode> Parser::parseTheorem() {
-  auto theorem = std::make_shared<TheoremNode>();
-  { // Parse head of theorem
-    Token nameToken;
-    if (check(TokenType::IDENTIFIER) || check(TokenType::STRING)) {
-      nameToken = advance();
-    } else {
-      throw ParserError("Expected theorem name (identifier or string)", peek());
-    }
-    theorem->name = std::string(nameToken.value);
-
-    if (!match(TokenType::COLON_EQ)) {
-      throw ParserError("Expected ':=' after theorem name", peek());
-    }
-
-    theorem->proposition = parseSequent();
+*/
+Prop Parser::parse() {
+  int indentLevel = 0;
+  while (check(TokenType::INDENT)) {
+    advance();
+    indentLevel++;
   }
 
-  { // Parse proofs(or body) of theorem
-    size_t currentLine = previous().line;
-    bool hasStartedProof = false;
-
-    // Collect proof tokens until \nqed
-    while (!isAtEnd() && !check(TokenType::QED)) {
-      Token t = peek();
-
-      // 새 줄이 시작될 때마다 반드시 INDENT가 있어야 함
-      if (t.line > currentLine) {
-        if (t.type != TokenType::INDENT) {
-          throw ParserError("Proof lines must be indented with 4 spaces", t);
-        }
-      } else if (!hasStartedProof && t.type != TokenType::INDENT) {
-        // 첫 증명 토큰이 새로운 줄(INDENT)에서 시작하지 않은 경우
-        throw ParserError("Proof must start on a new indented line", t);
-      }
-
-      currentLine = t.line;
-      t = advance();
-      hasStartedProof = true;
-
-      // INDENT 토큰은 증명 토큰 리스트에서 생략함
-      if (t.type == TokenType::INDENT) {
-        continue;
-      }
-
-      theorem->proofTokens.push_back(t);
-    }
-  }
-
-  { // Parse qed(or foot) of theorem
+  if (indentLevel == 0) {
     if (check(TokenType::QED)) {
       if (peek().column != 1) {
         throw ParserError("'qed' must be the only token on its line without "
                           "any leading spaces",
                           peek());
       }
+      Token qedToken = consume(TokenType::QED, "Expected 'qed'");
+      if (!isAtEnd() && peek().line == qedToken.line) {
+        throw ParserError("Expected end of line after 'qed'", peek());
+      }
+      return nullptr;
     }
 
-    Token qedToken =
-        consume(TokenType::QED, "Expected 'qed' to close theorem block");
+    Token startToken = peek();
+    consume(TokenType::THEOREM, "Expected 'theorem' keyword");
 
-    // qed 이후 같은 줄에 다른 토큰이 오면 에러 처리
-    if (!isAtEnd() && peek().line == qedToken.line) {
-      throw ParserError("'qed' must be the only token on its line", peek());
+    Token nameToken;
+    if (check(TokenType::IDENTIFIER) || check(TokenType::STRING))
+      nameToken = advance();
+    else
+      throw ParserError("Expected theorem name (identifier or string)", peek());
+
+    consume(TokenType::COLON_EQ, "Expected ':=' after theorem name");
+
+    auto head = std::make_shared<Head>(Var(std::string(nameToken.value)),
+                                       parseSequent());
+
+    if (!isAtEnd() && peek().line == startToken.line) {
+      throw ParserError("Unexpected token after theorem definition", peek());
     }
+    return head;
+  } else {
+    if (isAtEnd())
+      throw ParserError("Expected proof rule", peek());
+
+    Token ruleToken = advance();
+    TokenType type = ruleToken.type;
+    std::function<Sequent(const std::vector<Sequent> &)> evalFunc;
+
+    switch (type) {
+    case TokenType::ID: {
+      Prop p = parseProposition();
+      evalFunc = [p](const std::vector<Sequent> &seqs) {
+        return Identity(p).apply(seqs);
+      };
+      break;
+    }
+    case TokenType::CUT: {
+      evalFunc = [](const std::vector<Sequent> &seqs) {
+        return Cut().apply(seqs);
+      };
+      break;
+    }
+    case TokenType::ANDL1: {
+      Prop p = parseProposition();
+      evalFunc = [p](const std::vector<Sequent> &seqs) {
+        return AndL_1(p).apply(seqs);
+      };
+      break;
+    }
+    case TokenType::ANDL2: {
+      Prop p = parseProposition();
+      evalFunc = [p](const std::vector<Sequent> &seqs) {
+        return AndL_2(p).apply(seqs);
+      };
+      break;
+    }
+    case TokenType::ORL: {
+      evalFunc = [](const std::vector<Sequent> &seqs) {
+        return OrL().apply(seqs);
+      };
+      break;
+    }
+    case TokenType::IMPLL: {
+      evalFunc = [](const std::vector<Sequent> &seqs) {
+        return ImpliesL().apply(seqs);
+      };
+      break;
+    }
+    case TokenType::NOTL: {
+      evalFunc = [](const std::vector<Sequent> &seqs) {
+        return NotL().apply(seqs);
+      };
+      break;
+    }
+    case TokenType::FORALLL: {
+      Token t1 = consume(TokenType::IDENTIFIER,
+                         "Expected first identifier for forallL");
+      Token t2 = consume(TokenType::IDENTIFIER,
+                         "Expected second identifier for forallL");
+      Var v1(std::string(t1.value));
+      Var v2(std::string(t2.value));
+      evalFunc = [v1, v2](const std::vector<Sequent> &seqs) {
+        return ForallL(v1, v2).apply(seqs);
+      };
+      break;
+    }
+    case TokenType::EXISTL: {
+      Token t1 = consume(TokenType::IDENTIFIER,
+                         "Expected first identifier for existL");
+      Token t2 = consume(TokenType::IDENTIFIER,
+                         "Expected second identifier for existL");
+      Var v1(std::string(t1.value));
+      Var v2(std::string(t2.value));
+      evalFunc = [v1, v2](const std::vector<Sequent> &seqs) {
+        return ExistL(v1, v2).apply(seqs);
+      };
+      break;
+    }
+    case TokenType::WL: {
+      Prop p = parseProposition();
+      evalFunc = [p](const std::vector<Sequent> &seqs) {
+        return WeakeningL(p).apply(seqs);
+      };
+      break;
+    }
+    case TokenType::CL: {
+      evalFunc = [](const std::vector<Sequent> &seqs) {
+        return ContractionL().apply(seqs);
+      };
+      break;
+    }
+    case TokenType::PL: {
+      Token t = consume(TokenType::LITERAL, "Expected integer for pl");
+      int i = std::stoi(std::string(t.value));
+      evalFunc = [i](const std::vector<Sequent> &seqs) {
+        return PermutationL(i).apply(seqs);
+      };
+      break;
+    }
+    case TokenType::ORR1: {
+      Prop p = parseProposition();
+      evalFunc = [p](const std::vector<Sequent> &seqs) {
+        return OrR_1(p).apply(seqs);
+      };
+      break;
+    }
+    case TokenType::ORR2: {
+      Prop p = parseProposition();
+      evalFunc = [p](const std::vector<Sequent> &seqs) {
+        return OrR_2(p).apply(seqs);
+      };
+      break;
+    }
+    case TokenType::ANDR: {
+      evalFunc = [](const std::vector<Sequent> &seqs) {
+        return AndR().apply(seqs);
+      };
+      break;
+    }
+    case TokenType::IMPLR: {
+      evalFunc = [](const std::vector<Sequent> &seqs) {
+        return ImpliesR().apply(seqs);
+      };
+      break;
+    }
+    case TokenType::NOTR: {
+      evalFunc = [](const std::vector<Sequent> &seqs) {
+        return NotR().apply(seqs);
+      };
+      break;
+    }
+    case TokenType::FORALLR: {
+      Token t1 = consume(TokenType::IDENTIFIER,
+                         "Expected first identifier for forallR");
+      Token t2 = consume(TokenType::IDENTIFIER,
+                         "Expected second identifier for forallR");
+      Var v1(std::string(t1.value));
+      Var v2(std::string(t2.value));
+      evalFunc = [v1, v2](const std::vector<Sequent> &seqs) {
+        return ForallR(v1, v2).apply(seqs);
+      };
+      break;
+    }
+    case TokenType::EXISTR: {
+      Token t1 = consume(TokenType::IDENTIFIER,
+                         "Expected first identifier for existR");
+      Token t2 = consume(TokenType::IDENTIFIER,
+                         "Expected second identifier for existR");
+      Var v1(std::string(t1.value));
+      Var v2(std::string(t2.value));
+      evalFunc = [v1, v2](const std::vector<Sequent> &seqs) {
+        return ExistR(v1, v2).apply(seqs);
+      };
+      break;
+    }
+    case TokenType::WR: {
+      Prop p = parseProposition();
+      evalFunc = [p](const std::vector<Sequent> &seqs) {
+        return WeakeningR(p).apply(seqs);
+      };
+      break;
+    }
+    case TokenType::CR: {
+      evalFunc = [](const std::vector<Sequent> &seqs) {
+        return ContractionR().apply(seqs);
+      };
+      break;
+    }
+    case TokenType::PR: {
+      Token t = consume(TokenType::LITERAL, "Expected integer for pr");
+      int i = std::stoi(std::string(t.value));
+      evalFunc = [i](const std::vector<Sequent> &seqs) {
+        return PermutationR(i).apply(seqs);
+      };
+      break;
+    }
+    case TokenType::NEW_BRANCH: {
+      evalFunc = [](const std::vector<Sequent> &) { return Sequent({}, {}); };
+      break;
+    }
+    case TokenType::END_BRANCH: {
+      evalFunc = [](const std::vector<Sequent> &) { return Sequent({}, {}); };
+      break;
+    }
+    default:
+      throw ParserError("Unexpected token, expected proof rule", ruleToken);
+    }
+
+    if (!isAtEnd() && peek().line == ruleToken.line) {
+      throw ParserError("Unexpected token after proof rule", peek());
+    }
+
+    return std::make_shared<Eval>(evalFunc, type, indentLevel);
   }
-
-  return theorem;
 }
 
 std::shared_ptr<Sequent> Parser::parseSequent() {
@@ -147,11 +312,11 @@ std::shared_ptr<Sequent> Parser::parseSequent() {
   return std::make_shared<Sequent>(antecedents, succedents);
 }
 
-std::shared_ptr<PropNode> Parser::parseProposition() {
+Prop Parser::parseProposition() {
   return parseEquivalence(); // lowest priority
 }
 
-std::shared_ptr<PropNode> Parser::parseEquivalence() {
+Prop Parser::parseEquivalence() {
   auto expr = parseImplication();
   while (match(TokenType::EQUIV)) {
     previous();
@@ -161,7 +326,7 @@ std::shared_ptr<PropNode> Parser::parseEquivalence() {
   return expr;
 }
 
-std::shared_ptr<PropNode> Parser::parseImplication() {
+Prop Parser::parseImplication() {
   auto expr = parseOr();
   if (match(TokenType::RIGHTARROW)) {
     auto right = parseImplication();
@@ -170,7 +335,7 @@ std::shared_ptr<PropNode> Parser::parseImplication() {
   return expr;
 }
 
-std::shared_ptr<PropNode> Parser::parseOr() {
+Prop Parser::parseOr() {
   auto expr = parseAnd();
   while (match(TokenType::OR)) {
     previous();
@@ -180,7 +345,7 @@ std::shared_ptr<PropNode> Parser::parseOr() {
   return expr;
 }
 
-std::shared_ptr<PropNode> Parser::parseAnd() {
+Prop Parser::parseAnd() {
   auto expr = parseUnary();
   while (match(TokenType::AND)) {
     previous();
@@ -190,7 +355,7 @@ std::shared_ptr<PropNode> Parser::parseAnd() {
   return expr;
 }
 
-std::shared_ptr<PropNode> Parser::parseUnary() {
+Prop Parser::parseUnary() {
   if (match(TokenType::NOT)) {
     previous();
     auto right = parseUnary(); // Right-associative or recursive desc
@@ -215,7 +380,7 @@ std::shared_ptr<PropNode> Parser::parseUnary() {
   return parsePrimary();
 }
 
-std::shared_ptr<PropNode> Parser::parsePrimary() {
+Prop Parser::parsePrimary() {
   if (match(TokenType::IDENTIFIER)) {
     auto varNode = std::make_shared<Var>(std::string(previous().value));
 

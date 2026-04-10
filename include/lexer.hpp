@@ -29,9 +29,30 @@ enum class TokenType {
   TURNSTILE,   // |-
   COMMA,       // ,
   // Proof Rules
-  ID, CUT,
-  ANDL1, ANDL2, ORL, IMPLL, NOTL, FORALLL, EXISTL, WL, CL, PL,
-  ORR1, ORR2, ANDR, IMPLR, NOTR, FORALLR, EXISTR, WR, CR, PR
+  ID,
+  CUT,
+  ANDL1,
+  ANDL2,
+  ORL,
+  IMPLL,
+  NOTL,
+  FORALLL,
+  EXISTL,
+  WL,
+  CL,
+  PL,
+  ORR1,
+  ORR2,
+  ANDR,
+  IMPLR,
+  NOTR,
+  FORALLR,
+  EXISTR,
+  WR,
+  CR,
+  PR,
+  NEW_BRANCH,
+  END_BRANCH
 };
 
 struct Token {
