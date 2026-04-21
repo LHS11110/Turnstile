@@ -52,7 +52,8 @@ enum class TokenType {
   CR,
   PR,
   NEW_BRANCH,
-  END_BRANCH
+  END_BRANCH,
+  USE
 };
 
 struct Token {
@@ -73,8 +74,8 @@ private:
   size_t line;
   size_t column;
 
-  char peek(size_t offset = 0) const;
-  char advance();
+  char peek(size_t offset = 0) const noexcept;
+  char advance() noexcept;
   bool isAtEnd() const;
   void skipWhitespace();
 

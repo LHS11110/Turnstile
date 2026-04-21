@@ -35,21 +35,6 @@ Token Parser::consume(TokenType type, const std::string &message) {
   throw ParserError(message, peek());
 }
 
-/*
-std::vector<std::shared_ptr<TheoremNode>> theorems;
-  while (!isAtEnd()) {
-    // Skip stray indents or newlines if any
-    if (match(TokenType::INDENT))
-      continue;
-
-    if (match(TokenType::THEOREM)) {
-      theorems.push_back(parseTheorem());
-    } else {
-      throw ParserError("Expected 'theorem' keyword", peek());
-    }
-  }
-  return theorems;
-*/
 Prop Parser::parse() {
   int indentLevel = 0;
   while (check(TokenType::INDENT)) {
@@ -82,13 +67,16 @@ Prop Parser::parse() {
 
     consume(TokenType::COLON_EQ, "Expected ':=' after theorem name");
 
-    auto head = std::make_shared<Head>(Var(std::string(nameToken.value)),
-                                       parseSequent());
-
-    if (!isAtEnd() && peek().line == startToken.line) {
+    auto sequent = parseSequent();
+    if (!isAtEnd() && peek().line == startToken.line)
       throw ParserError("Unexpected token after theorem definition", peek());
-    }
-    return head;
+
+    Var nameVar(std::string(nameToken.value));
+    if (sequent->checkVar(nameVar))
+      throw ParserError("A theorem identifier cannot be used as a "
+                        "propositional variable.",
+                        nameToken);
+    return make_shared<Head>(nameVar, sequent);
   } else {
     if (isAtEnd())
       throw ParserError("Expected proof rule", peek());
@@ -273,13 +261,20 @@ Prop Parser::parse() {
       evalFunc = [](const std::vector<Sequent> &) { return Sequent({}, {}); };
       break;
     }
+    case TokenType::USE: {
+      Token t = consume(TokenType::IDENTIFIER, "Expected identifier for use");
+      Var v(std::string(t.value));
+      evalFunc = [v](const std::vector<Sequent> &seqs) {
+        return Use(v).apply(seqs);
+      };
+      break;
+    }
     default:
       throw ParserError("Unexpected token, expected proof rule", ruleToken);
     }
 
-    if (!isAtEnd() && peek().line == ruleToken.line) {
+    if (!isAtEnd() && peek().line == ruleToken.line)
       throw ParserError("Unexpected token after proof rule", peek());
-    }
 
     return std::make_shared<Eval>(evalFunc, type, indentLevel);
   }
@@ -383,18 +378,17 @@ Prop Parser::parseUnary() {
 Prop Parser::parsePrimary() {
   if (match(TokenType::IDENTIFIER)) {
     auto varNode = std::make_shared<Var>(std::string(previous().value));
-
     if (match(TokenType::EQUAL)) {
       if (match(TokenType::IDENTIFIER)) {
-        return std::make_shared<Equal>(*varNode,
-                                       Var(std::string(previous().value)));
+        auto varNode2 = Var(std::string(previous().value));
+        return std::make_shared<Equal>(*varNode, varNode2);
       } else {
         throw ParserError("Expected identifier after '='", peek());
       }
     } else if (match(TokenType::IN)) {
       if (match(TokenType::IDENTIFIER)) {
-        return std::make_shared<In>(*varNode,
-                                    Var(std::string(previous().value)));
+        auto varNode2 = Var(std::string(previous().value));
+        return std::make_shared<In>(*varNode, varNode2);
       } else {
         throw ParserError("Expected identifier after 'in'", peek());
       }

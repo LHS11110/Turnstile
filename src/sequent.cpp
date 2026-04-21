@@ -1,5 +1,6 @@
 #include "sequent.hpp"
 #include "lexer.hpp"
+#include "turnstile.hpp"
 #include <cstddef>
 #include <memory>
 #include <stdexcept>
@@ -27,7 +28,13 @@ PropNode::PropNode(TokenType type) : nodeType(type) {}
 
 TokenType PropNode::getNodeType() const { return nodeType; }
 
-Var::Var(int var) : PropNode(TokenType::IDENTIFIER), var(var) {}
+Var::Var(int var) : PropNode(TokenType::IDENTIFIER), var(var) {
+  if (!isRegistered(var))
+    throw std::runtime_error("Variable " + std::to_string(var) +
+                             " is not registered");
+}
+
+bool Var::isRegistered(int id) { return idToName.find(id) != idToName.end(); }
 
 Var::Var(const std::string &name)
     : PropNode(TokenType::IDENTIFIER), var(registerName(name)) {}
@@ -125,7 +132,7 @@ Forall::Forall(Prop var, Prop prop)
 bool Forall::isEqual(const Prop &other) const {
   if (other->getNodeType() != TokenType::FORALL)
     return false;
-  else if (!static_cast<const Forall &>(*other).var->isEqual(var))
+  else if (static_cast<const Forall &>(*other).var != var)
     return false;
   else if (!static_cast<const Forall &>(*other).prop->isEqual(prop))
     return false;
@@ -144,15 +151,15 @@ Exist::Exist(Prop var, Prop prop)
 bool Exist::isEqual(const Prop &other) const {
   if (other->getNodeType() != TokenType::EXIST)
     return false;
-  else if (!static_cast<const Exist &>(*other).var->isEqual(var))
+  else if (static_cast<const Exist &>(*other).var != var)
     return false;
   else if (!static_cast<const Exist &>(*other).prop->isEqual(prop))
     return false;
   return true;
 }
 
-std::map<std::string, int> Var::nameToId;
-std::map<int, std::string> Var::idToName;
+std::unordered_map<std::string, int> Var::nameToId;
+std::unordered_map<int, std::string> Var::idToName;
 int Var::nextId = 0;
 
 int Var::registerName(const std::string &name) {
@@ -779,7 +786,7 @@ std::string Head::toString() const {
   return name.toString() + " := " + seq->toString();
 }
 
-Head::Head(Var name, std::shared_ptr<Sequent> seq)
+Head::Head(Var name, std::shared_ptr<const Sequent> seq)
     : PropNode(TokenType::THEOREM), name(name), seq(seq) {}
 
 const Prop Head::replaceVar(const Var &, const Var &, const Prop &me) const {
@@ -790,20 +797,49 @@ Eval::Eval(std::function<Sequent(const std::vector<Sequent> &)> eval,
            TokenType type, size_t indentLevel)
     : PropNode(type), indentLevel(indentLevel), eval(eval) {}
 
-bool Eval::isEqual(const Prop &other) const {
-  return other->getNodeType() == this->getNodeType();
+bool Eval::isEqual(const Prop &) const {
+  throw std::runtime_error("Eval::isEqual is not implemented");
 }
 
 std::string Eval::toString() const {
   return "Eval<" + tokenTypeToString(getNodeType()) + ">";
 }
 
-const Prop Eval::replaceVar(const Var &, const Var &, const Prop &me) const {
-  return me;
+const Prop Eval::replaceVar(const Var &, const Var &, const Prop &) const {
+  throw std::runtime_error("Eval::replaceVar is not implemented");
 }
 
-bool Eval::checkVar(const Var &) const { return false; }
+bool Eval::checkVar(const Var &) const {
+  throw std::runtime_error("Eval::checkVar is not implemented");
+}
 
 Sequent Eval::apply(const std::vector<Sequent> &seq) const { return eval(seq); }
 
 bool Var::operator==(const Var &other) const { return this->var == other.var; }
+
+bool Var::operator!=(const Var &other) const {
+  return !(this->operator==(other));
+}
+
+bool Sequent::checkVar(const Var &oldVar) const {
+  for (auto &iter : antecedents)
+    if (iter->checkVar(oldVar))
+      return true;
+  for (auto &iter : succedents)
+    if (iter->checkVar(oldVar))
+      return true;
+  return false;
+}
+
+Use::Use(Var name) : Rule(), name(name) {
+  if (!Turnstile::isTheoremName(name))
+    throw std::runtime_error("Invalid Use application");
+}
+
+Sequent Use::apply(const std::vector<Sequent> &) const {
+  return Turnstile::getTheorem(name);
+}
+
+size_t Eval::getIndentLevel() const { return indentLevel; }
+
+const Var Head::getName() const { return name; }

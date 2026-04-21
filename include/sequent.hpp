@@ -3,7 +3,6 @@
 #include "lexer.hpp"
 #include <cstddef>
 #include <functional>
-#include <map>
 #include <memory>
 #include <string>
 
@@ -31,13 +30,14 @@ public:
 class Var : public PropNode {
 private:
   const int var;
-  static std::map<std::string, int> nameToId;
-  static std::map<int, std::string> idToName;
+  static std::unordered_map<std::string, int> nameToId;
+  static std::unordered_map<int, std::string> idToName;
   static int nextId;
 
 private:
   static int registerName(const std::string &name);
   static std::string getName(int id);
+  static bool isRegistered(int id);
 
 public:
   Var(int var);
@@ -52,6 +52,7 @@ public:
   virtual bool checkVar(const Var &) const override;
 
   bool operator==(const Var &other) const;
+  bool operator!=(const Var &other) const;
 };
 
 class Not : public PropNode {
@@ -203,6 +204,11 @@ private:
   const std::vector<Prop> succedents;
 
 public:
+  Sequent() = default;
+  Sequent(const Sequent &other) = default;
+  Sequent(Sequent &&other) = default;
+  ~Sequent() = default;
+
   Sequent(const std::vector<Prop> &antecedents,
           const std::vector<Prop> &succedents);
   std::string toString() const;
@@ -213,6 +219,8 @@ public:
   Sequent addSuccedent(Prop p) const;
   Sequent removeAntecedent(size_t index) const;
   Sequent removeSuccedent(size_t index) const;
+  bool checkVar(const Var &) const;
+  bool isEqual(const Sequent &) const;
 };
 
 class Rule {
@@ -397,17 +405,20 @@ public:
 
 class Head : public PropNode {
 private:
-  Var name;                     // theorem name
-  std::shared_ptr<Sequent> seq; // theorem
+  const Var name;                           // theorem name
+  const std::shared_ptr<const Sequent> seq; // theorem
 
 public:
-  Head(Var name, std::shared_ptr<Sequent> seq);
+  Head(Var name, std::shared_ptr<const Sequent> seq);
   bool isEqual(const Prop &) const override;
   std::string toString() const override;
 
   virtual const Prop replaceVar(const Var &oldVar, const Var &newVar,
                                 const Prop &) const override;
   virtual bool checkVar(const Var &) const override;
+
+  const Sequent getSequent() const;
+  const Var getName() const;
 };
 
 class Eval : public PropNode {
@@ -425,5 +436,15 @@ public:
                                 const Prop &) const override;
   virtual bool checkVar(const Var &) const override;
 
+  size_t getIndentLevel() const;
   Sequent apply(const std::vector<Sequent> &seq) const;
+};
+
+class Use : public Rule {
+private:
+  const Var name;
+
+public:
+  Use(Var name);
+  Sequent apply(const std::vector<Sequent> &seq) const override;
 };

@@ -6,13 +6,13 @@
 Lexer::Lexer(std::string_view source)
     : source(source), pos(0), line(1), column(1) {}
 
-char Lexer::peek(size_t offset) const {
+char Lexer::peek(size_t offset) const noexcept {
   if (pos + offset >= source.length())
     return '\0';
   return source[pos + offset];
 }
 
-char Lexer::advance() {
+char Lexer::advance() noexcept {
   if (isAtEnd())
     return '\0';
   char c = source[pos++];
@@ -135,7 +135,7 @@ Token Lexer::scanIdentifierOrKeyword() {
       {"forallR", TokenType::FORALLR}, {"existR", TokenType::EXISTR},
       {"wr", TokenType::WR},           {"cr", TokenType::CR},
       {"pr", TokenType::PR},           {"new_branch", TokenType::NEW_BRANCH},
-      {"end", TokenType::END_BRANCH}};
+      {"end", TokenType::END_BRANCH},  {"use", TokenType::USE}};
 
   auto it = keywords.find(std::string(value));
   if (it != keywords.end())
@@ -352,6 +352,8 @@ std::string tokenTypeToString(TokenType type) {
     return "NEW_BRANCH";
   case TokenType::END_BRANCH:
     return "END_BRANCH";
+  case TokenType::USE:
+    return "USE";
   default:
     return "???";
   }
