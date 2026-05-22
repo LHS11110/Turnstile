@@ -1,0 +1,27 @@
+theorem distributivity := (A /\ B) \/ (A /\ C) |- A /\ (B \/ C)
+    new_branch
+        new_branch
+            id A
+            andL1 B
+        end
+        new_branch
+            id B
+            orR1 C
+            andL2 A
+        end
+        andR
+    end
+    new_branch
+        new_branch
+            id A
+            andL1 C
+        end
+        new_branch
+            id C
+            orR2 B
+            andL2 A
+        end
+        andR
+    end
+    orL
+qed

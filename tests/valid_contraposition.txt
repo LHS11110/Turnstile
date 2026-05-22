@@ -1,0 +1,14 @@
+theorem contraposition := A -> B |- ~B -> ~A
+    id A
+    new_branch
+        id B
+        notL
+        pl 0
+    end
+    implL
+    pl 1
+    pl 0
+    pl 1
+    notR
+    implR
+qed

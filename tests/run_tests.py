@@ -16,6 +16,16 @@ TEST_CASES = [
         "expected_error": None
     },
     {
+        "filename": "valid_distributivity.txt",
+        "expected_success": True,
+        "expected_error": None
+    },
+    {
+        "filename": "valid_contraposition.txt",
+        "expected_success": True,
+        "expected_error": None
+    },
+    {
         "filename": "invalid_indent.txt",
         "expected_success": False,
         "expected_error": "Line 3: Indent level does not match"

@@ -4,6 +4,7 @@
 #include "sequent.hpp"
 #include <functional>
 #include <memory>
+#include <iostream>
 
 std::vector<std::vector<Sequent>> Turnstile::proof = {};
 std::unordered_map<const Var, const Sequent> Turnstile::theorems = {};
@@ -82,11 +83,14 @@ void Turnstile::interpret(const std::string &input) {
       throw std::runtime_error("Indent level does not match");
     if (eval->getNodeType() == TokenType::NEW_BRANCH) {
       proof.push_back({});
+      std::cout << "  [Branch " << proof.size() - 1 << " opened]" << std::endl;
     } else if (eval->getNodeType() == TokenType::END_BRANCH) {
       if (proof.size() < 2)
         throw std::runtime_error("Invalid proof");
-      proof[proof.size() - 2].push_back(proof.back().back());
+      Sequent merged = proof.back().back();
+      proof[proof.size() - 2].push_back(merged);
       proof.pop_back();
+      std::cout << "  [Branch closed. Pushed sequent: " << merged.toString() << "]" << std::endl;
     } else {
       switch (eval->getNodeType()) {
       // 0-premise rules (Axioms)
@@ -94,6 +98,7 @@ void Turnstile::interpret(const std::string &input) {
       case TokenType::USE: {
         Sequent sequent = eval->apply({});
         proof.back().push_back(sequent);
+        std::cout << "  () -> (" << sequent.toString() << ")" << std::endl;
         break;
       }
 
@@ -110,6 +115,7 @@ void Turnstile::interpret(const std::string &input) {
         proof.back().pop_back();
         Sequent sequent = eval->apply({seq1, seq2});
         proof.back().push_back(sequent);
+        std::cout << "  ((" << seq1.toString() << "), (" << seq2.toString() << ")) -> (" << sequent.toString() << ")" << std::endl;
         break;
       }
 
@@ -137,6 +143,7 @@ void Turnstile::interpret(const std::string &input) {
         proof.back().pop_back();
         Sequent sequent = eval->apply({seq});
         proof.back().push_back(sequent);
+        std::cout << "  (" << seq.toString() << ") -> (" << sequent.toString() << ")" << std::endl;
         break;
       }
 
