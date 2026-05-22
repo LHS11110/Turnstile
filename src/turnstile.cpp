@@ -46,7 +46,7 @@ void Turnstile::interpret(const std::string &input) {
       proof.clear(); // 증명 초기화
       throw std::runtime_error("Invalid proof");
     }
-    if (proof[0].back().isEqual(
+    if (!proof[0].back().isEqual(
             head->getSequent())) { // 증명이 끝났는데 증명하려는 명제와 같지
                                    // 않은 경우
       proof.clear();               // 증명 초기화
@@ -68,7 +68,8 @@ void Turnstile::interpret(const std::string &input) {
     isProvable = true;
     this->head = head;
   } else {
-    std::shared_ptr<Eval> eval = std::static_pointer_cast<Eval>(ast);
+    const std::shared_ptr<const Eval> eval =
+        std::static_pointer_cast<const Eval>(ast);
     if (proof.size() != eval->getIndentLevel())
       throw std::runtime_error("Indent level does not match");
     if (eval->getNodeType() == TokenType::NEW_BRANCH) {

@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Define source files
 set(SOURCES
+    src/main.cpp
     src/turnstile.cpp
     src/lexer.cpp
     src/parser.cpp

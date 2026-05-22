@@ -831,6 +831,25 @@ bool Sequent::checkVar(const Var &oldVar) const {
   return false;
 }
 
+bool Sequent::isEqual(const Sequent &other) const {
+  if (antecedents.size() != other.antecedents.size() ||
+      succedents.size() != other.succedents.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < antecedents.size(); ++i) {
+    if (!antecedents[i]->isEqual(other.antecedents[i])) {
+      return false;
+    }
+  }
+  for (size_t i = 0; i < succedents.size(); ++i) {
+    if (!succedents[i]->isEqual(other.succedents[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+
 Use::Use(Var name) : Rule(), name(name) {
   if (!Turnstile::isTheoremName(name))
     throw std::runtime_error("Invalid Use application");
