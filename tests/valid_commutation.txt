@@ -1,0 +1,11 @@
+theorem commutation := A /\ B |- B /\ A
+    new_branch
+        id B
+        andL2 A
+    end
+    new_branch
+        id A
+        andL1 B
+    end
+    andR
+qed

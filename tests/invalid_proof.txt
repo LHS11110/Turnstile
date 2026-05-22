@@ -1,0 +1,4 @@
+theorem identity_law := |- A -> A
+    id B
+    implR
+qed
