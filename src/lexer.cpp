@@ -32,8 +32,15 @@ void Lexer::skipWhitespace() {
     char c = peek();
 
     // 처음에 4개의 공백이 나오면 INDENT 토큰 처리를 위해 스킵 중단
-    if (c == ' ' && column == 1 && peek(1) == ' ' && peek(2) == ' ' &&
-        peek(3) == ' ') {
+    bool only_spaces = true;
+    for (size_t i = pos - (column - 1); i < pos; ++i) {
+      if (source[i] != ' ') {
+        only_spaces = false;
+        break;
+      }
+    }
+    if (c == ' ' && only_spaces && (column - 1) % 4 == 0 &&
+        peek(1) == ' ' && peek(2) == ' ' && peek(3) == ' ') {
       break;
     }
 
@@ -210,8 +217,15 @@ Token Lexer::nextToken() {
   char c = peek();
 
   // 줄 번호와 컬럼 번호 1인 상태에서 첫 4개의 공백을 만났을 때 INDENT 토큰 반환
-  if (c == ' ' && column == 1 && peek(1) == ' ' && peek(2) == ' ' &&
-      peek(3) == ' ') {
+  bool only_spaces = true;
+  for (size_t i = pos - (column - 1); i < pos; ++i) {
+    if (source[i] != ' ') {
+      only_spaces = false;
+      break;
+    }
+  }
+  if (c == ' ' && only_spaces && (column - 1) % 4 == 0 &&
+      peek(1) == ' ' && peek(2) == ' ' && peek(3) == ' ') {
     size_t startLine = line;
     size_t startCol = column;
     advance();

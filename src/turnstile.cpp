@@ -67,10 +67,18 @@ void Turnstile::interpret(const std::string &input) {
       throw std::runtime_error("Theorem name already exists");
     isProvable = true;
     this->head = head;
+    proof.clear();
+    proof.push_back({});
   } else {
     const std::shared_ptr<const Eval> eval =
         std::static_pointer_cast<const Eval>(ast);
-    if (proof.size() != eval->getIndentLevel())
+    size_t expectedIndent = proof.size();
+    if (eval->getNodeType() == TokenType::END_BRANCH) {
+      if (proof.empty())
+        throw std::runtime_error("Invalid proof: no active theorem");
+      expectedIndent = proof.size() - 1;
+    }
+    if (expectedIndent != eval->getIndentLevel())
       throw std::runtime_error("Indent level does not match");
     if (eval->getNodeType() == TokenType::NEW_BRANCH) {
       proof.push_back({});
@@ -81,113 +89,59 @@ void Turnstile::interpret(const std::string &input) {
       proof.pop_back();
     } else {
       switch (eval->getNodeType()) {
-      case TokenType::ANDL1: {
-        Sequent sequent = eval->apply({proof.back().back()});
-        proof.back().push_back(sequent);
-        break;
-      }
-      case TokenType::ANDL2: {
-        Sequent sequent = eval->apply({proof.back().back()});
-        proof.back().push_back(sequent);
-        break;
-      }
-      case TokenType::ORL: {
-        Sequent sequent = eval->apply({proof.back().back()});
-        proof.back().push_back(sequent);
-        break;
-      }
-      case TokenType::IMPLL: {
-        Sequent sequent = eval->apply({proof.back().back()});
-        proof.back().push_back(sequent);
-        break;
-      }
-      case TokenType::NOTL: {
-        Sequent sequent = eval->apply({proof.back().back()});
-        proof.back().push_back(sequent);
-        break;
-      }
-      case TokenType::FORALLL: {
-        Sequent sequent = eval->apply({proof.back().back()});
-        proof.back().push_back(sequent);
-        break;
-      }
-      case TokenType::EXISTL: {
-        Sequent sequent = eval->apply({proof.back().back()});
-        proof.back().push_back(sequent);
-        break;
-      }
-      case TokenType::WL: {
-        Sequent sequent = eval->apply({proof.back().back()});
-        proof.back().push_back(sequent);
-        break;
-      }
-      case TokenType::CL: {
-        Sequent sequent = eval->apply({proof.back().back()});
-        proof.back().push_back(sequent);
-        break;
-      }
-      case TokenType::PL: {
-        Sequent sequent = eval->apply({proof.back().back()});
-        proof.back().push_back(sequent);
-        break;
-      }
-      case TokenType::ORR1: {
-        Sequent sequent = eval->apply({proof.back().back()});
-        proof.back().push_back(sequent);
-        break;
-      }
-      case TokenType::ORR2: {
-        Sequent sequent = eval->apply({proof.back().back()});
-        proof.back().push_back(sequent);
-        break;
-      }
-      case TokenType::ANDR: {
-        Sequent sequent = eval->apply({proof.back().back()});
-        proof.back().push_back(sequent);
-        break;
-      }
-      case TokenType::IMPLR: {
-        Sequent sequent = eval->apply({proof.back().back()});
-        proof.back().push_back(sequent);
-        break;
-      }
-      case TokenType::NOTR: {
-        Sequent sequent = eval->apply({proof.back().back()});
-        proof.back().push_back(sequent);
-        break;
-      }
-      case TokenType::FORALLR: {
-        Sequent sequent = eval->apply({proof.back().back()});
-        proof.back().push_back(sequent);
-        break;
-      }
-      case TokenType::EXISTR: {
-        Sequent sequent = eval->apply({proof.back().back()});
-        proof.back().push_back(sequent);
-        break;
-      }
-      case TokenType::WR: {
-        Sequent sequent = eval->apply({proof.back().back()});
-        proof.back().push_back(sequent);
-        break;
-      }
-      case TokenType::CR: {
-        Sequent sequent = eval->apply({proof.back().back()});
-        proof.back().push_back(sequent);
-        break;
-      }
-      case TokenType::PR: {
-        Sequent sequent = eval->apply({proof.back().back()});
-        proof.back().push_back(sequent);
-        break;
-      }
-      case TokenType::ID: {
+      // 0-premise rules (Axioms)
+      case TokenType::ID:
+      case TokenType::USE: {
         Sequent sequent = eval->apply({});
         proof.back().push_back(sequent);
         break;
       }
+
+      // 2-premise rules
+      case TokenType::ORL:
+      case TokenType::IMPLL:
+      case TokenType::ANDR:
+      case TokenType::CUT: {
+        if (proof.back().size() < 2)
+          throw std::runtime_error("Invalid proof: not enough premises on stack");
+        Sequent seq2 = proof.back().back();
+        proof.back().pop_back();
+        Sequent seq1 = proof.back().back();
+        proof.back().pop_back();
+        Sequent sequent = eval->apply({seq1, seq2});
+        proof.back().push_back(sequent);
+        break;
+      }
+
+      // 1-premise rules
+      case TokenType::ANDL1:
+      case TokenType::ANDL2:
+      case TokenType::NOTL:
+      case TokenType::FORALLL:
+      case TokenType::EXISTL:
+      case TokenType::WL:
+      case TokenType::CL:
+      case TokenType::PL:
+      case TokenType::ORR1:
+      case TokenType::ORR2:
+      case TokenType::IMPLR:
+      case TokenType::NOTR:
+      case TokenType::FORALLR:
+      case TokenType::EXISTR:
+      case TokenType::WR:
+      case TokenType::CR:
+      case TokenType::PR: {
+        if (proof.back().empty())
+          throw std::runtime_error("Invalid proof: no premise on stack");
+        Sequent seq = proof.back().back();
+        proof.back().pop_back();
+        Sequent sequent = eval->apply({seq});
+        proof.back().push_back(sequent);
+        break;
+      }
+
       default:
-        throw std::runtime_error("Invalid proof");
+        throw std::runtime_error("Invalid proof: unknown rule type");
       }
     }
   }
