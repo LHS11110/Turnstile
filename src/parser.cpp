@@ -262,7 +262,12 @@ Prop Parser::parse() {
       break;
     }
     case TokenType::USE: {
-      Token t = consume(TokenType::IDENTIFIER, "Expected identifier for use");
+      Token t;
+      if (check(TokenType::IDENTIFIER) || check(TokenType::STRING)) {
+        t = advance();
+      } else {
+        throw ParserError("Expected theorem name (identifier or string) for use", peek());
+      }
       Var v(std::string(t.value));
       evalFunc = [v](const std::vector<Sequent> &seqs) {
         return Use(v).apply(seqs);

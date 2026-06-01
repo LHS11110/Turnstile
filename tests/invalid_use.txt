@@ -1,0 +1,3 @@
+theorem test_thm := |- A -> A
+    use non_existent_theorem
+qed
