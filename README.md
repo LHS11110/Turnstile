@@ -50,11 +50,14 @@ Type 'exit' to quit.
 > theorem identity_law := |- A -> A
   [OK] Step accepted.
 >     id A
+  () -> (A |- A)
   [OK] Step accepted.
 >     implR
+  (A |- A) -> ( |- (A -> A))
   [OK] Step accepted.
 > qed
   [OK] Step accepted.
+> exit
 ```
 
 ### 2. 파일 리다이렉션 모드
