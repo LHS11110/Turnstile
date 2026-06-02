@@ -132,7 +132,7 @@ Forall::Forall(Prop var, Prop prop)
 bool Forall::isEqual(const Prop &other) const {
   if (other->getNodeType() != TokenType::FORALL)
     return false;
-  else if (static_cast<const Forall &>(*other).var != var)
+  else if (!static_cast<const Forall &>(*other).var->isEqual(var))
     return false;
   else if (!static_cast<const Forall &>(*other).prop->isEqual(prop))
     return false;
@@ -151,7 +151,7 @@ Exist::Exist(Prop var, Prop prop)
 bool Exist::isEqual(const Prop &other) const {
   if (other->getNodeType() != TokenType::EXIST)
     return false;
-  else if (static_cast<const Exist &>(*other).var != var)
+  else if (!static_cast<const Exist &>(*other).var->isEqual(var))
     return false;
   else if (!static_cast<const Exist &>(*other).prop->isEqual(prop))
     return false;
